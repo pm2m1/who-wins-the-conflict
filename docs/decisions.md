@@ -683,3 +683,86 @@ config that overrides these values for an actual Colab run, not in the
 primary committed configuration. No result-record schema changed in this
 task; whether a run manifest should persist hardware placement metadata
 is left as a separate, later decision.
+
+## Restrict primary trials to defensible conflicts (2026-08-17)
+
+The first real Qwen/Qwen2.5-7B-Instruct 20-item PopQA baseline screen
+completed successfully through the committed CLI and exposed a
+methodological issue in conflict construction, distinct from the earlier
+abstention (`72928b7`) and Decision-format (`ffa67c5`) fixes: **different
+answer != validated semantic conflict**. KC/KW eligibility alone does not
+establish that a KC item's foil, or a KW item's gold answer, is in actual
+semantic contradiction with the model's memory answer.
+
+Six examples from that screen (full detail in
+`docs/phase2_research_design.md`, "Primary conflict trial eligibility"):
+`sport`/St. Louis Blues (ice hockey vs. handball) and `country`/Brown
+University (USA vs. Tunisia) are defensible conflicts; `genre` (drama vs.
+erotica) is ambiguous, since genres are not mutually exclusive;
+`religion` (Christianity vs. Baptists) is hierarchical/compatible, not a
+contradiction; two `screenwriter` examples showed the relation can
+legitimately have multiple correct values, including a multi-name answer
+("Eric Paul Friedmann and Christophe Beck") that the old KW-cleanliness
+check did not catch.
+
+A full census of the pinned PopQA snapshot (14,267 rows, 16 relations)
+was inspected for per-subject duplicate-object rates across all 16
+relations. That census **motivated** this review but is deliberately
+**not** the classification rule itself — a relation's semantic type
+decides its category, not its observed duplicate rate (e.g. `occupation`
+has a low observed duplicate rate in this snapshot, ~0.19%, but is
+excluded anyway because it is conceptually multi-label in general, and
+`capital of` has a comparatively high rate, ~20.4%, which is corroborating
+evidence for excluding it rather than the reason on its own).
+
+**Fix:** a new, centralized, independently-testable relation policy
+(`src/conflict_eval/data/conflict_eligibility.py`) plus a subject-level
+multi-object check against the full interim PopQA pool. Three researcher-
+defined categories — `PRIMARY_RELATIONS` (`place of birth`, `sport`,
+`country`, `mother`), `REVIEW_RELATIONS` (`father`, `capital`, `color`),
+`EXCLUDED_PRIMARY_RELATIONS` (`genre`, `religion`, `screenwriter`,
+`director`, `producer`, `composer`, `author`, `occupation`, `capital of`)
+— cover all 16 observed relations; any relation outside all three
+(unexpected for this snapshot) defaults to requiring review, never to
+silent eligibility. This is a deliberately conservative **pilot policy**,
+not a claim about which relations are objectively single-valued in the
+world — a researcher may revisit `REVIEW_RELATIONS`, or expand
+`PRIMARY_RELATIONS`, after direct inspection.
+
+KC/KW semantics were deliberately **not** redefined: `knowledge_group`
+still means only "the model's answer matches gold, or not, and is
+usable." Primary-conflict eligibility is a new, orthogonal pair of
+fields — `primary_conflict_eligible` (bool) and
+`conflict_eligibility_reason` — added to every KC/KW record, computed
+independently of KC/KW assignment, and checked in `cli.py:cmd_screen`
+right after `knowledge_group` is set. `manual_review` (the existing
+general-purpose flag) is set `True` for the two reasons that represent a
+genuinely ambiguous case worth a researcher's attention
+(`relation_multi_object`, `relation_requires_review`, and the defensive
+`relation_unrecognized` fallback), but left unset for
+`relation_not_primary_conflict`, since that is a settled policy exclusion
+rather than an open question. Parametric margins are still computed for
+every KC/KW record regardless of conflict eligibility — margins measure
+the model's own confidence, not the relation's semantic properties, and
+this project does not discard usable baseline information unnecessarily.
+`cmd_build_pilot` now filters to `primary_conflict_eligible == True` in
+addition to the existing `knowledge_group` filter, so only defensible
+conflict items are ever sampled into a pilot trial.
+
+`is_clean_factual_candidate` (`evaluation/baseline_eligibility.py`)
+additionally rejects a word-level " and " conjunction, alongside the
+existing comma/" or " checks, so a multi-name or multi-item answer like
+the screenwriter example above is routed to `manual_review` instead of
+becoming an automatic KW memory candidate. This is a small, explicit
+addition, not a broad speculative blacklist.
+
+`foils.py` itself is unchanged: same-relation sampling remains the
+minimum defensible type-compatibility control, and a foil is never
+claimed to be logically impossible merely because it came from another
+same-relation item — whether the resulting KC item is usable as a
+primary conflict trial is decided separately, by the policy above, not
+by the foil-sampling mechanism.
+
+This was discovered from a 20-item infrastructure smoke screen, before
+scaling to the 100/500-item screening pool and before source calibration
+or C0-C4, so no scientific result was invalidated.

@@ -83,9 +83,20 @@ def is_clean_factual_candidate(parsed_answer: str) -> bool:
     phrasing (docs/decisions.md) — only the specific markers in
     `classify_baseline_eligibility` are checked explicitly; anything else
     is judged solely on this shape-based cleanliness check.
+
+    A real 7B PopQA screen produced "Eric Paul Friedmann and Christophe
+    Beck" as a screenwriter answer — a two-name conjunction that the
+    original comma/" or " checks did not catch, and which is not a single
+    factual candidate (docs/decisions.md, "Restrict primary trials to
+    defensible conflicts"). " and " is therefore also rejected as a
+    word-level conjunction/list marker; this is a small, explicit
+    addition, not a broad speculative blacklist.
     """
     if len(parsed_answer.split()) > MAX_CLEAN_ANSWER_WORDS:
         return False
     if "," in parsed_answer:
         return False
-    return " or " not in parsed_answer.lower()
+    lowered = parsed_answer.lower()
+    if " or " in lowered:
+        return False
+    return " and " not in lowered

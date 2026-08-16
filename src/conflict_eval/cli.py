@@ -22,6 +22,10 @@ from conflict_eval.config import (
     load_prompts_config,
     load_sources_config,
 )
+from conflict_eval.data.conflict_eligibility import (
+    build_relation_subject_object_index,
+    classify_primary_conflict_eligibility,
+)
 from conflict_eval.data.foils import build_relation_index, sample_foil
 from conflict_eval.data.normalize import is_match, normalize_answer
 from conflict_eval.data.popqa import (
@@ -141,6 +145,7 @@ def cmd_screen(model_key: str, config_path: str) -> None:
         raise RuntimeError("No screened candidates found — run prepare-data first.")
 
     relation_index = build_relation_index(interim_items)
+    relation_subject_index = build_relation_subject_object_index(interim_items)
     rng = random.Random(config.seed)
 
     model = _build_model_adapter(spec)
@@ -225,6 +230,25 @@ def cmd_screen(model_key: str, config_path: str) -> None:
                 continue
             record["knowledge_group"] = "KW"
             memory_answer, conflicting_answer = parsed.answer, gold
+
+        # Relation-level + subject-level policy for PRIMARY conflict trial
+        # eligibility — orthogonal to KC/KW (baseline knowledge state),
+        # which is preserved above regardless: different answer != validated
+        # semantic conflict (docs/decisions.md, "Restrict primary trials to
+        # defensible conflicts"). A record can be a perfectly valid KC/KW
+        # item while still being ineligible for automatic primary conflict
+        # trial construction; build-pilot filters on this field, not on
+        # knowledge_group alone.
+        conflict_eligibility = classify_primary_conflict_eligibility(
+            item.get("prop"), item.get("subj"), relation_subject_index
+        )
+        record["primary_conflict_eligible"] = conflict_eligibility.eligible
+        record["conflict_eligibility_reason"] = conflict_eligibility.reason
+        if conflict_eligibility.reason in ("relation_multi_object", "relation_requires_review", "relation_unrecognized"):
+            # A genuinely ambiguous case for a researcher to inspect, as
+            # opposed to a settled policy exclusion (relation_not_primary_
+            # conflict), which is not flagged for manual review.
+            record["manual_review"] = True
 
         # answer_prefix="Answer: " matches the field label the model is
         # instructed to produce before its answer (docs/decisions.md,
@@ -434,8 +458,20 @@ def cmd_build_pilot(model_key: str, config_path: str) -> None:
     if not baseline_records:
         raise RuntimeError(f"No baseline records found for '{model_key}' — run screen first.")
 
-    kc_items = [r for r in baseline_records if r.get("knowledge_group") == "KC"]
-    kw_items = [r for r in baseline_records if r.get("knowledge_group") == "KW"]
+    # Only relation/subject pairs judged to be a defensible primary
+    # conflict are sampled into the pilot — KC/KW alone is not sufficient
+    # (docs/decisions.md, "Restrict primary trials to defensible
+    # conflicts"): different answer != validated semantic conflict.
+    kc_items = [
+        r
+        for r in baseline_records
+        if r.get("knowledge_group") == "KC" and r.get("primary_conflict_eligible") is True
+    ]
+    kw_items = [
+        r
+        for r in baseline_records
+        if r.get("knowledge_group") == "KW" and r.get("primary_conflict_eligible") is True
+    ]
 
     sampled_kc = sample_balanced_across_bins(
         kc_items, config.sampling["target_kc_items"], config.seed, id_key="item_id"

@@ -119,6 +119,87 @@ KC for one model may be KC, KW, excluded, or manual_review for another.
   role, including an explicit abstention (see `docs/methodology.md` for
   exact exclusion criteria).
 
+## Primary conflict trial eligibility: different answer != semantic conflict
+
+KC/KW describes the model's baseline knowledge state (does its answer
+match gold, and is it a usable candidate at all). It does **not** by
+itself establish that a KC item's foil, or a KW item's gold answer,
+actually *contradicts* the model's memory answer. A PopQA relation can be
+genuinely multi-valued (e.g. a film can legitimately have several
+screenwriters) or hierarchical/compatible (e.g. a specific Christian
+denomination is not in contradiction with "Christianity") without the two
+answers being in real semantic conflict. Since this project studies
+context-memory *conflict*, a trial built from two answers that could both
+be simultaneously true is not a defensible conflict trial, regardless of
+how clean either answer looks in isolation.
+
+The first real Qwen2.5-7B-Instruct 20-item PopQA baseline screen exposed
+this directly. Six examples from that screen, in increasing order of how
+defensible the "conflict" actually was:
+
+- `sport` / St. Louis Blues: memory "ice hockey" vs. foil "handball" —
+  genuinely defensible conflict (a team plays one sport).
+- `country` / Brown University: memory "United States of America" vs.
+  foil "Tunisia" — genuinely defensible conflict (an institution has one
+  country).
+- `genre`: memory "drama" vs. gold "erotica" — ambiguous; genres are not
+  mutually exclusive category labels.
+- `religion`: memory "Christianity" vs. gold "Baptists" — hierarchical/
+  compatible, not a genuine contradiction.
+- `screenwriter` (two examples): different person names, and a
+  multi-name answer ("Eric Paul Friedmann and Christophe Beck") that was
+  clean enough by the old shape-based check alone to become a KW memory
+  answer — screenwriter is a relation that can legitimately have
+  multiple correct values.
+
+This was discovered from a 20-item infrastructure smoke screen, before
+scaling to the 100/500-item screening pool and before source calibration
+or C0-C4, so no scientific result was invalidated — see
+`docs/decisions.md` for the dated record.
+
+**Relation policy.** Every PopQA relation observed in the pinned snapshot
+is placed in exactly one of three researcher-defined categories
+(`src/conflict_eval/data/conflict_eligibility.py`), by semantic type, not
+by an observed per-relation duplicate rate (a census of duplicate rates
+motivated this review but is not itself the classification rule — a
+relation with a low observed duplicate rate can still be conceptually
+multi-label, e.g. "occupation"):
+
+- **PRIMARY** (automatically eligible): `place of birth`, `sport`,
+  `country`, `mother`.
+- **REVIEW** (excluded from automatic sampling, flagged for researcher
+  review): `father`, `capital`, `color`.
+- **EXCLUDED** (a settled pilot policy exclusion, not flagged for
+  review): `genre`, `religion`, `screenwriter`, `director`, `producer`,
+  `composer`, `author`, `occupation`, `capital of`.
+
+This is a deliberately conservative *pilot* policy, not a claim about
+which relations are objectively single-valued in the world — a
+researcher may revisit REVIEW relations, or expand PRIMARY, after direct
+inspection.
+
+**Subject-level multi-object check.** Even within a PRIMARY relation, a
+specific subject can have more than one distinct known object in the full
+interim PopQA pool (e.g. two rows both correctly claiming a university is
+in a different country in different sources). Such a subject is
+automatically ineligible (`relation_multi_object`) regardless of the
+relation's general category, and is flagged for manual review — this
+check is built from the full interim pool, not only the sampled
+screening candidates, so it is not limited by chance inclusion in a
+particular subsample.
+
+**Record fields.** KC/KW assignment itself is unchanged by this policy —
+`knowledge_group` continues to mean only "usable parametric answer,
+matching gold or not." Every KC/KW record additionally carries
+`primary_conflict_eligible` (boolean) and `conflict_eligibility_reason`
+(`None`, `relation_requires_review`, `relation_not_primary_conflict`, or
+`relation_multi_object`). `build-pilot` samples only
+`primary_conflict_eligible == true` items. Parametric margins are still
+computed for every KC/KW record regardless of conflict eligibility — the
+margin measures the model's own confidence, not the relation's semantic
+properties, and this project does not discard usable baseline
+information unnecessarily.
+
 ## Sampling across parametric strength
 
 We do not select only extreme-margin items. H3 requires observing multiple
@@ -144,6 +225,16 @@ Rules (implemented in `src/conflict_eval/data/foils.py`):
 6. If no defensible foil can be constructed for an item, the item is
    excluded and the reason is logged — not forced.
 7. Foils are not LLM-generated in the pilot.
+
+Same-relation sampling is the minimum defensible **type-compatibility**
+control (a "capital of" foil is at least the right answer type) — it is
+not, by itself, sufficient to establish that a foil is in genuine semantic
+*conflict* with the gold answer, since some relations are legitimately
+multi-valued (see "Primary conflict trial eligibility," above). A foil
+sampled this way is not claimed to be logically impossible merely because
+it came from another same-relation item; whether a KC item (and its foil)
+is usable as a primary conflict trial at all is decided separately, by
+the relation/subject policy, not by the foil-sampling mechanism itself.
 
 ## Source-preference calibration
 

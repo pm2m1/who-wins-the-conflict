@@ -91,6 +91,18 @@ def test_answer_with_or_is_not_clean():
     assert not is_clean_factual_candidate("Paris or London")
 
 
+def test_answer_with_and_is_not_clean():
+    assert not is_clean_factual_candidate("Paris and London")
+
+
+def test_real_model_multi_name_conjunction_is_not_clean():
+    # Regression test: a real 7B PopQA screen produced this exact
+    # screenwriter answer, which the original comma/" or " checks did not
+    # catch (docs/decisions.md, "Restrict primary trials to defensible
+    # conflicts").
+    assert not is_clean_factual_candidate("Eric Paul Friedmann and Christophe Beck")
+
+
 def test_excessively_long_answer_is_not_clean():
     long_answer = " ".join(["word"] * 10)
     assert not is_clean_factual_candidate(long_answer)

@@ -170,15 +170,32 @@ model, deterministically, then:
    exclusions stream) since the response itself was syntactically valid.
 4. Classifies eligible items as `KC` (answer matches gold/alias), `KW`
    (answer does not match gold/alias and is additionally a clean,
-   unambiguous candidate — short, no comma, no "or"), or `manual_review`
-   (an eligible but not obviously clean non-matching answer), per model.
-5. Computes the conflict-specific parametric margin for every KC and KW
-   item (using the relevant foil for KC, gold for KW) and assigns a
-   within-pool quantile `margin_bin` (`low`/`medium`/`high`) for pilot
-   sampling convenience only.
+   unambiguous candidate — short, no comma, no " or ", no " and " as a
+   word-level conjunction), or `manual_review` (an eligible but not
+   obviously clean non-matching answer), per model. A real Qwen2.5-7B-Instruct
+   screen produced a screenwriter answer ("Eric Paul Friedmann and
+   Christophe Beck") that the comma/" or " checks alone did not catch;
+   see `docs/decisions.md`, "Restrict primary trials to defensible
+   conflicts".
+5. Checks primary conflict trial eligibility for every KC/KW item,
+   independent of KC/KW assignment itself (`data/conflict_eligibility.py`):
+   a relation-level policy (`PRIMARY_RELATIONS` / `REVIEW_RELATIONS` /
+   `EXCLUDED_PRIMARY_RELATIONS`) plus a subject-level check against the
+   full interim pool for relations/subjects with more than one distinct
+   known object. Stored as `primary_conflict_eligible` (bool) and
+   `conflict_eligibility_reason`; does not change `knowledge_group`. See
+   `docs/phase2_research_design.md`, "Primary conflict trial eligibility:
+   different answer != semantic conflict", for the full rationale and
+   the exact relation lists.
+6. Computes the conflict-specific parametric margin for every KC and KW
+   item (using the relevant foil for KC, gold for KW), regardless of
+   primary conflict eligibility, and assigns a within-pool quantile
+   `margin_bin` (`low`/`medium`/`high`) for pilot sampling convenience
+   only.
 
 Knowledge groups and margins are stored per `(model_id, item_id)` and are
-never assumed to transfer across models.
+never assumed to transfer across models. `build-pilot` additionally
+filters to `primary_conflict_eligible == true` before sampling.
 
 ## 6. Foil construction (KC items)
 
@@ -188,7 +205,10 @@ deterministically (seeded) from another PopQA item sharing the same
 known alias. If no valid same-relation foil exists, the item is excluded
 and logged, not forced with a mismatched-type foil. Foil metadata (foil
 answer, source item id, relation, generation method = "same_relation_sample")
-is stored on the item record.
+is stored on the item record. Same-relation sampling establishes
+type-compatibility only, not semantic conflict — whether the resulting
+KC item is usable as a primary conflict trial is decided separately by
+the relation/subject policy in step 5 above.
 
 ## 7. Source-preference calibration
 
