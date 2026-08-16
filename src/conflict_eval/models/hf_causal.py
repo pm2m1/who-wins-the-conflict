@@ -18,6 +18,37 @@ from conflict_eval.scoring.sequence_logprob import (
 )
 
 
+class ModelRevisionResolutionError(RuntimeError):
+    """Raised when a real model load cannot be pinned to a verified, exact
+    Hugging Face commit SHA before loading. Real experimental runs must
+    fail clearly here rather than silently proceeding with an unknown or
+    unverified model snapshot (docs/decisions.md, "Resolve, pin, load,
+    record").
+    """
+
+
+def resolve_model_revision(hf_model_id: str, requested_revision: str | None) -> str | None:
+    """Resolve `requested_revision` (or "main" if `None`) to the exact,
+    immutable Hugging Face commit SHA for `hf_model_id`, via a single
+    `huggingface_hub` metadata request — no file/weight download.
+
+    This is the SELECTION mechanism (used to decide which revision to
+    pass to `from_pretrained`), not just a post-load inference — see
+    docs/decisions.md, "Resolve, pin, load, record". Returns `None`,
+    never a guessed value, if Hub access is unavailable (offline, no
+    credentials for a gated repo, etc.) or the lookup otherwise fails.
+    """
+    try:
+        from huggingface_hub import HfApi
+    except ImportError:
+        return None
+    try:
+        info = HfApi().model_info(hf_model_id, revision=requested_revision or "main")
+    except Exception:  # noqa: BLE001 — any Hub/network failure must degrade to "unavailable", not crash resolution
+        return None
+    return info.sha
+
+
 class HFCausalAdapter(BaseModelAdapter):
     def __init__(
         self,
@@ -25,7 +56,18 @@ class HFCausalAdapter(BaseModelAdapter):
         revision: str | None = None,
         dtype: str | None = None,
         device_map: str | None = None,
+        require_pinned_revision: bool = True,
     ) -> None:
+        """`require_pinned_revision` defaults to True: if the exact commit
+        SHA cannot be resolved before loading, construction raises
+        `ModelRevisionResolutionError` rather than silently loading an
+        unpinned/unverified snapshot. Passing `require_pinned_revision=False`
+        is an explicit, documented opt-out (e.g. offline exploratory use)
+        that falls back to loading with whatever `revision` was requested
+        — the resulting run cannot claim exact revision pinning, and
+        `resolved_revision` will be `None` unless a post-load consistency
+        check (below) is still able to recover a commit hash.
+        """
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -33,34 +75,64 @@ class HFCausalAdapter(BaseModelAdapter):
         self.requested_revision = revision
         self._torch = torch
 
+        # Resolve BEFORE loading, so the revision determines what gets
+        # loaded rather than being inferred afterward (docs/decisions.md,
+        # "Resolve, pin, load, record").
+        self.resolved_revision = resolve_model_revision(hf_model_id, revision)
+
+        if self.resolved_revision is None:
+            if require_pinned_revision:
+                raise ModelRevisionResolutionError(
+                    f"Could not resolve an exact Hugging Face commit SHA for "
+                    f"{hf_model_id!r} (requested revision: {revision!r}). A real "
+                    "experimental run must not proceed with an unpinned/unverified "
+                    "model snapshot. Check Hub access (network connectivity, "
+                    "authentication for gated repos) and retry, or construct this "
+                    "adapter with require_pinned_revision=False to explicitly "
+                    "accept an unpinned load."
+                )
+            load_revision = revision
+        else:
+            load_revision = self.resolved_revision
+
         torch_dtype = getattr(torch, dtype) if dtype else None
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model_id, revision=revision)
+        # Both calls use the SAME load_revision value, so the tokenizer
+        # and model are guaranteed to come from the identical snapshot.
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model_id, revision=load_revision)
         self.model = AutoModelForCausalLM.from_pretrained(
             hf_model_id,
-            revision=revision,
+            revision=load_revision,
             torch_dtype=torch_dtype,
             device_map=device_map,
         )
         self.model.eval()
 
-        # transformers records the exact resolved commit SHA for the
-        # snapshot it loaded on `config._commit_hash`, extracted from the
-        # local Hugging Face Hub cache path (.../snapshots/<sha>/...) —
-        # this requires no extra network call beyond the load that already
-        # happened above (docs/decisions.md, "Exact model revision
-        # recording"). It is populated even when `revision` was left
-        # `None` ("main"), which is the common case that most needs a
-        # concrete, citable snapshot identifier. If the attribute is
-        # missing or empty (e.g. loading from a plain local directory, or
-        # a transformers version that does not expose it), this is left
-        # as None rather than guessed.
-        self.resolved_revision = getattr(self.model.config, "_commit_hash", None) or None
+        # Post-load CONSISTENCY CHECK only, not the selection mechanism:
+        # transformers exposes the commit hash it actually resolved
+        # locally on config._commit_hash. If we deliberately pinned a
+        # specific SHA above, this must agree with it — a mismatch would
+        # mean something is wrong (a moved ref, a caching bug, ...) and
+        # must not be silently accepted.
+        post_load_commit_hash = getattr(self.model.config, "_commit_hash", None) or None
+        if (
+            self.resolved_revision is not None
+            and post_load_commit_hash is not None
+            and post_load_commit_hash != self.resolved_revision
+        ):
+            raise ModelRevisionResolutionError(
+                f"Post-load commit hash {post_load_commit_hash!r} does not match "
+                f"the resolved revision {self.resolved_revision!r} that was "
+                f"explicitly requested for {hf_model_id!r}. Refusing to continue "
+                "with a model snapshot that cannot be verified."
+            )
+
         # model_revision is the field already used throughout result
-        # records (docs/methodology.md); it now prefers the resolved
-        # commit SHA and only falls back to the requested revision string
-        # when a concrete SHA could not be determined, so existing
-        # consumers of this field keep working without a schema change.
-        self.model_revision = self.resolved_revision or self.requested_revision
+        # records (docs/methodology.md). It equals resolved_revision
+        # whenever exact resolution succeeded; in the explicit
+        # require_pinned_revision=False opt-out path, it falls back to
+        # the post-load commit hash (if the local cache still yields one)
+        # and finally to the bare requested revision string.
+        self.model_revision = self.resolved_revision or post_load_commit_hash or self.requested_revision
 
     def _render_prefix(self, messages: list[Message]) -> str:
         # add_generation_prompt=True appends the assistant-turn-start

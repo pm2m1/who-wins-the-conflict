@@ -148,17 +148,23 @@ equivalent pipeline is also exercised automatically by
 - All stochastic steps (candidate subsampling, foil sampling, decoding)
   are seeded via `configs/pilot.yaml`.
 - Every generation record stores model id, model revision, the exact
-  rendered prompt, prompt version, and generation config. `model_revision`
-  is the exact resolved Hugging Face commit SHA whenever one could be
-  determined (from local cache metadata, no extra download), not just the
-  requested `revision` from `configs/models.yaml` — see
-  `docs/decisions.md`, "Exact model revision recording".
+  rendered prompt, prompt version, and generation config. A real model
+  run resolves the exact Hugging Face commit SHA for the configured
+  `revision` (or "main") *before* loading, via one small Hub metadata
+  request, and loads both the tokenizer and the model from that same
+  pinned SHA — `model_revision` equals it whenever resolution succeeded.
+  By default, if the SHA cannot be resolved (e.g. offline, or no
+  credentials for a gated repo), model construction raises rather than
+  silently proceeding with an unpinned snapshot — see `docs/decisions.md`,
+  "Resolve, pin, load, record".
 - Raw PopQA data is not committed (license on the dataset card is
   unstated); `data/README.md` documents exact recreation steps.
-  `data/raw/manifest.json` records the exact resolved dataset commit SHA
-  (`resolved_revision`) alongside the dataset id/split, when it can be
-  determined — see `docs/decisions.md`, "Exact PopQA dataset revision
-  recording".
+  `prepare-data` resolves the exact PopQA commit SHA before calling
+  `datasets.load_dataset(..., revision=...)`, and `data/raw/manifest.json`
+  records that same SHA as `resolved_revision`. If the SHA cannot be
+  resolved, `prepare-data` fails clearly rather than downloading data it
+  cannot exactly attribute — see `docs/decisions.md`, "Resolve, pin, load,
+  record".
 - Experiments are resumable: interrupting `run` and re-invoking it skips
   already-completed generations rather than duplicating them.
 - Secrets: this project currently has no `.env` file and reads no

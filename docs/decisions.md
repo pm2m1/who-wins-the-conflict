@@ -297,3 +297,68 @@ Manifest construction was factored out into a small pure function,
 `resolved_revision` is always present, even as `None`) is unit-testable
 without a real dataset download; `download_raw`'s behavior is otherwise
 unchanged.
+
+## Resolve, pin, load, record (not load, then infer)
+
+The previous two entries recorded a resolved revision, but both did so by
+*inferring* it after the fact — from `transformers`' post-load
+`config._commit_hash` (model side) or by scanning the local Hugging Face
+cache for whatever happened to be there (dataset side). That is weaker
+than it looks: the revision that ends up recorded is not necessarily the
+revision that was *deliberately selected* before loading, and the
+dataset-side cache scan in particular could, in principle, report an
+unrelated cached revision as if it were proven to be the one the current
+call used.
+
+For real research runs, this project now enforces the stronger
+invariant:
+
+    resolve concrete Hub commit SHA
+        -> load using that exact SHA
+        -> record that exact same SHA
+
+**Model side** (`models/hf_causal.py`): `resolve_model_revision(hf_model_id,
+requested_revision)` calls `huggingface_hub.HfApi().model_info(...)` —
+one small metadata request, no weight download — *before* constructing
+the tokenizer or model, and returns the exact commit SHA (or `None` if
+Hub access fails; never guessed). `HFCausalAdapter` passes that same
+resolved SHA as `revision=` to *both* `AutoTokenizer.from_pretrained` and
+`AutoModelForCausalLM.from_pretrained`, guaranteeing they load from the
+identical snapshot. By default (`require_pinned_revision=True`),
+construction raises `ModelRevisionResolutionError` if resolution fails,
+rather than silently loading an unpinned snapshot — a real experimental
+run must fail clearly here, not produce results attributable to an
+unknown model version. `config._commit_hash` is still read after
+loading, but now purely as a **consistency check**: if it disagrees with
+the SHA that was deliberately requested, construction raises rather than
+continuing with a snapshot that cannot be verified. An explicit
+`require_pinned_revision=False` opt-out is available and documented for
+non-strict use (e.g. offline exploratory work); it cannot claim exact
+revision pinning, and falls back to the old post-load inference (then to
+the bare requested revision string) precisely because it is not claiming
+the stronger guarantee.
+
+**Dataset side** (`data/popqa.py`): `resolve_dataset_revision(hf_dataset_id,
+requested_revision="main")` now calls `huggingface_hub.HfApi().dataset_info(...)`
+(one metadata request) instead of scanning the local cache post-download.
+This replaces the earlier cache-scanning implementation entirely — it did
+not distinguish "the revision this call actually used" from "whatever
+happens to be cached," which the earlier entry's own "most recently
+modified" fallback heuristic made concrete. `download_raw` now resolves
+the SHA first and passes it explicitly to
+`datasets.load_dataset(..., revision=resolved_sha)`; if resolution fails,
+it raises `DatasetRevisionResolutionError` before attempting any load,
+with no opt-out (unlike the model side, there is no non-strict variant of
+a real PopQA download in this project). The manifest's `resolved_revision`
+field is unchanged in name and meaning, but now reflects the SHA that was
+actually used to load the data, not one inferred afterward.
+
+Both resolution functions were validated against real Hugging Face Hub
+metadata during implementation (`Qwen/Qwen2.5-7B-Instruct` and
+`akariasai/PopQA`, `revision="main"` — a metadata-only request, no
+weights or dataset files downloaded); the resolved SHAs matched the
+values previously observed via post-load/cache-based inference exactly,
+which is expected since "main" had not moved. Ordinary test coverage
+uses mocked `huggingface_hub`/`transformers`/`datasets` throughout
+(`tests/test_hf_causal_revision.py`, `tests/test_dataset_revision.py`) —
+no test downloads model weights or the dataset.

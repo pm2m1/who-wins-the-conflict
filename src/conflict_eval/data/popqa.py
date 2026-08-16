@@ -31,49 +31,46 @@ POPQA_FIELDS = [
 ]
 
 
-def resolve_dataset_revision(hf_dataset_id: str) -> str | None:
-    """Resolve the exact commit SHA of the locally cached snapshot of
-    `hf_dataset_id` actually used, via `huggingface_hub`'s local cache
-    index (`scan_cache_dir`) — no extra network call beyond whatever
-    `datasets.load_dataset` already made (docs/decisions.md, "Exact
-    PopQA dataset revision recording").
+class DatasetRevisionResolutionError(RuntimeError):
+    """Raised when a real PopQA download cannot be pinned to a verified,
+    exact Hugging Face commit SHA before loading. A real data-preparation
+    run must fail clearly here rather than silently claiming an exact
+    revision that was never actually verified (docs/decisions.md,
+    "Resolve, pin, load, record").
+    """
+
+
+def resolve_dataset_revision(hf_dataset_id: str, requested_revision: str | None = "main") -> str | None:
+    """Resolve `requested_revision` (default "main") to the exact,
+    immutable Hugging Face commit SHA for the dataset repo
+    `hf_dataset_id`, via a single `huggingface_hub` metadata request — no
+    dataset file download.
+
+    This is the SELECTION mechanism: the returned SHA is meant to be
+    passed to `datasets.load_dataset(..., revision=...)` so the revision
+    determines what gets loaded, rather than being inferred afterward
+    from local cache state (docs/decisions.md, "Resolve, pin, load,
+    record" — this deliberately replaces an earlier implementation that
+    scanned the local cache post-download and could, in principle, pick
+    up an unrelated cached revision rather than the one the current call
+    actually used).
 
     `huggingface_hub` is not a direct project dependency here: it is
     already installed transitively via `transformers`/`datasets`, so it
     is imported lazily rather than re-declared in pyproject.toml.
 
-    Returns None — never a guessed value — if the cache cannot be
-    scanned, the repo is not found in it (e.g. a non-default cache
-    location), or huggingface_hub is unavailable for any reason.
+    Returns `None` — never a guessed value — if Hub access is unavailable
+    (offline, etc.) or the lookup otherwise fails.
     """
     try:
-        import huggingface_hub
+        from huggingface_hub import HfApi
     except ImportError:
         return None
-
     try:
-        cache_info = huggingface_hub.scan_cache_dir()
-    except Exception:  # noqa: BLE001 — cache-scan failure must degrade to "unavailable", not crash the pipeline
+        info = HfApi().dataset_info(hf_dataset_id, revision=requested_revision or "main")
+    except Exception:  # noqa: BLE001 — any Hub/network failure must degrade to "unavailable", not crash resolution
         return None
-
-    matching_repos = [
-        repo
-        for repo in cache_info.repos
-        if repo.repo_id == hf_dataset_id and repo.repo_type == "dataset"
-    ]
-    if not matching_repos:
-        return None
-    revisions = list(matching_repos[0].revisions)
-    if not revisions:
-        return None
-
-    # Prefer the revision whose refs include "main" (the default branch,
-    # and what an unpinned `datasets.load_dataset` call resolves to);
-    # fall back to the most recently modified cached revision otherwise.
-    for revision in revisions:
-        if "main" in revision.refs:
-            return revision.commit_hash
-    return max(revisions, key=lambda r: r.last_modified).commit_hash
+    return info.sha
 
 
 def build_manifest(
@@ -97,18 +94,37 @@ def build_manifest(
     }
 
 
-def download_raw(hf_dataset_id: str, split: str, raw_dir: str | Path) -> Path:
+def download_raw(
+    hf_dataset_id: str, split: str, raw_dir: str | Path, revision: str | None = "main"
+) -> Path:
     """Download PopQA via `datasets.load_dataset` and dump it to
     `raw_dir` as JSONL, alongside a manifest recording the exact
     identifier/split/resolved revision, for reproducibility
     (data/README.md).
+
+    Follows resolve -> pin -> load -> record: the exact commit SHA is
+    resolved first, then passed explicitly to `load_dataset(revision=...)`,
+    so the manifest records the revision that was actually used to load
+    the data rather than one inferred afterward. Raises
+    DatasetRevisionResolutionError rather than proceeding if that SHA
+    cannot be resolved — a real data-preparation run must not silently
+    claim an exact revision that was never verified.
     """
     import datasets  # deferred: heavy, network-using dependency
 
     raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    ds = datasets.load_dataset(hf_dataset_id, split=split)
+    resolved_revision = resolve_dataset_revision(hf_dataset_id, revision)
+    if resolved_revision is None:
+        raise DatasetRevisionResolutionError(
+            f"Could not resolve an exact Hugging Face commit SHA for dataset "
+            f"{hf_dataset_id!r} (requested revision: {revision!r}). A real "
+            "data-preparation run must not proceed with an unpinned/unverified "
+            "dataset snapshot. Check Hub access (network connectivity) and retry."
+        )
+
+    ds = datasets.load_dataset(hf_dataset_id, split=split, revision=resolved_revision)
     out_path = raw_dir / "popqa_raw.jsonl"
     with open(out_path, "w", encoding="utf-8") as f:
         f.writelines(json.dumps(row) + "\n" for row in ds)
@@ -118,7 +134,7 @@ def download_raw(hf_dataset_id: str, split: str, raw_dir: str | Path) -> Path:
         split=split,
         num_rows=len(ds),
         fields=ds.column_names,
-        resolved_revision=resolve_dataset_revision(hf_dataset_id),
+        resolved_revision=resolved_revision,
     )
     with open(raw_dir / "manifest.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
