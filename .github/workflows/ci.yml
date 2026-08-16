@@ -1,0 +1,43 @@
+# Standard CI: deterministic unit tests and lint only.
+#
+# Never downloads model weights, never runs the gated real-tokenizer
+# integration tests (see tokenizer-integration.yml for that, run
+# separately and only on manual trigger), and never touches real Hugging
+# Face model/dataset content — this workflow verifies the existing
+# software test suite only, not the research pipeline itself.
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install project (with dev dependencies)
+        run: pip install -e ".[dev]"
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Run ruff
+        run: ruff check .

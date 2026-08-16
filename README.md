@@ -143,6 +143,19 @@ output never touched `data/`, `results/`, or `figures/` here. The
 equivalent pipeline is also exercised automatically by
 `tests/test_dry_run_pipeline.py` on every test run.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs `pytest -q` and `ruff check .` on every
+push and pull request to `main` (Python 3.10, matching this project's
+supported baseline), and can also be triggered manually. It never
+downloads model weights, runs the gated real-tokenizer tests, or uses
+repository secrets — it verifies the existing software test suite only,
+not the research pipeline itself. A separate, manually-triggered workflow
+(`.github/workflows/tokenizer-integration.yml`) runs the gated real
+Qwen2.5 tokenizer/config tests on demand; see `docs/decisions.md`, "CI:
+separate tokenizer integration job." No status badge is included yet —
+one will be added once an actual workflow run has succeeded.
+
 ## Reproducibility notes
 
 - All stochastic steps (candidate subsampling, foil sampling, decoding)

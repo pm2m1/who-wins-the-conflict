@@ -362,3 +362,33 @@ which is expected since "main" had not moved. Ordinary test coverage
 uses mocked `huggingface_hub`/`transformers`/`datasets` throughout
 (`tests/test_hf_causal_revision.py`, `tests/test_dataset_revision.py`) —
 no test downloads model weights or the dataset.
+
+## CI: separate tokenizer integration job
+
+GitHub Actions CI (`.github/workflows/ci.yml`) runs the deterministic
+unit test suite and `ruff check .` on every push/PR to `main`, plus
+`workflow_dispatch`. It deliberately does not set
+`CONFLICT_EVAL_RUN_TOKENIZER_TESTS`, so the gated real-tokenizer tests in
+`tests/test_hf_tokenizer_integration.py` stay skipped there, matching how
+they already behave in a plain local `pytest -q`.
+
+A second, separate workflow (`.github/workflows/tokenizer-integration.yml`)
+runs only those gated tests, with `CONFLICT_EVAL_RUN_TOKENIZER_TESTS=1`
+set explicitly. It is `workflow_dispatch`-only (never triggered by
+push/PR), so it never adds an unnecessary Hugging Face Hub network call
+to ordinary CI runs. Kept as an entirely separate workflow file (not an
+extra job inside `ci.yml`) so it has its own distinct name and run history
+in the Actions UI — a failure there reads unambiguously as "Hugging Face
+Hub was unreachable, or its tokenizer/chat-template changed" rather than
+being interleavable with, or mistaken for, a deterministic code
+regression in the main CI run. It downloads only the
+Qwen/Qwen2.5-7B-Instruct tokenizer/config files (~11MB), never model
+weights, and both workflows request only `permissions: contents: read`
+and use no repository secrets.
+
+This is judged worth the extra file: it is fully isolated from the
+required CI signal (a PR can merge on `ci.yml` alone), costs nothing
+unless someone deliberately runs it, and gives a way to periodically
+re-confirm the chat-template/tokenizer assumptions this project's scoring
+code depends on still hold against the real Hugging Face repo, without
+coupling that check to every ordinary push.

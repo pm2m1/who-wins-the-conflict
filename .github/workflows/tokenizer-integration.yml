@@ -1,0 +1,49 @@
+# Optional, manually-triggered job validating the real Qwen2.5-7B-Instruct
+# tokenizer/chat-template/commit-hash-resolution behavior
+# (tests/test_hf_tokenizer_integration.py), against live Hugging Face Hub
+# metadata.
+#
+# Kept entirely separate from ci.yml (docs/decisions.md, "CI: separate
+# tokenizer integration job"):
+#   - it is network-dependent, so a failure here can mean "Hugging Face
+#     Hub was unreachable" rather than "the code regressed" — a clearly
+#     different workflow name/run makes that distinction obvious in the
+#     Actions UI, rather than being one job's failure buried inside the
+#     otherwise-deterministic CI run;
+#   - it must never run on every push/PR, to avoid an unnecessary network
+#     download on every small change — workflow_dispatch only.
+#
+# Downloads ONLY the tokenizer/config files for Qwen/Qwen2.5-7B-Instruct
+# (~11MB: vocab/merges/tokenizer_config/config.json) — never model
+# weights, never a real experiment.
+name: Tokenizer Integration (manual, network)
+
+"on":
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  tokenizer-integration:
+    name: Real Qwen2.5 tokenizer/config validation (network-dependent)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install project (with dev dependencies)
+        run: pip install -e ".[dev]"
+
+      - name: Run gated tokenizer/config integration tests
+        env:
+          CONFLICT_EVAL_RUN_TOKENIZER_TESTS: "1"
+        run: pytest -q tests/test_hf_tokenizer_integration.py
