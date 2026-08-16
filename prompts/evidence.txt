@@ -1,0 +1,4 @@
+Source: {source}
+
+Statement:
+The answer to the question "{question}" is "{asserted_answer}".

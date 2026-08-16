@@ -1,0 +1,48 @@
+# Pilot experiment configuration. All counts here are pilot-scale
+# defaults (docs/phase2_research_design.md, "Pilot size") and are meant to
+# be edited, not treated as fixed constants.
+
+seed: 42
+
+dataset:
+  hf_dataset_id: akariasai/PopQA
+  split: test
+  # Number of candidates screened for baseline answers, per model.
+  # docs asked for ~500-1000; kept configurable and modest by default so
+  # a dry run / small real run stays cheap.
+  screening_candidates: 500
+
+paths:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  results_dir: results
+  figures_dir: figures
+
+sampling:
+  # Target items per knowledge group, per model, for the pilot sample.
+  target_kc_items: 30
+  target_kw_items: 30
+  # Quantile bins used only to spread pilot sampling across parametric
+  # strength levels (docs/phase2_research_design.md, "Sample across
+  # parametric strength"). Not used as the primary analysis variable.
+  margin_bins: [low, medium, high]
+
+models:
+  - llama
+  - qwen
+
+# Per-model source-role assignment, set by the researcher AFTER inspecting
+# calibrate-sources output (docs/pilot_protocol.md, step 6). build-pilot
+# refuses to run for a model whose entries here are null.
+source_roles:
+  llama:
+    preferred_source: null
+    dispreferred_source: null
+  qwen:
+    preferred_source: null
+    dispreferred_source: null
+
+prompts_config: configs/prompts.yaml
+sources_config: configs/sources.yaml
+models_config: configs/models.yaml

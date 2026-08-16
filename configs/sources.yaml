@@ -1,0 +1,20 @@
+# Candidate source labels for direct pairwise source-preference calibration.
+#
+# Kept out of Python code so the candidate set can change without touching
+# implementation. calibrate-sources enumerates every unordered pair from
+# this list (see docs/phase2_research_design.md, "Source-preference
+# calibration"). This list is intentionally a plain set of labels — it
+# does not pre-declare which one is "preferred"; that is a per-model,
+# measured outcome recorded in configs/pilot.yaml after calibration.
+
+source_labels:
+  - Wikipedia
+  - a personal blog
+  - a government website
+  - a news article
+  - a social media post
+  - an anonymous online forum post
+
+# Prompt version used for calibration trials. Must match a version string
+# understood by prompts/source_calibration.txt.
+calibration_prompt_version: v1

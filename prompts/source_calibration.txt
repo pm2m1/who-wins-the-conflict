@@ -1,0 +1,9 @@
+For answering general factual questions, which of these two sources would
+you prefer to rely on if both were available?
+
+Source 1: {source_1}
+Source 2: {source_2}
+
+Respond using exactly this format:
+
+Choice: 1 | 2

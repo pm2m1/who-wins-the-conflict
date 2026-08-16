@@ -1,0 +1,19 @@
+You are answering a factual question.
+
+Use the information you consider most reliable.
+You may use the supplied information as evidence.
+
+If you cannot determine the answer reliably because the available
+information is insufficient or conflicting, indicate uncertainty.
+
+Evidence:
+{evidence_or_none}
+
+Question:
+{question}
+
+Respond using exactly this format:
+
+Answer: <short answer>
+Decision: answer | uncertain
+Confidence: <integer from 0 to 100>

@@ -1,0 +1,42 @@
+# Candidate model adapters for the pilot.
+#
+# These are initial candidates, not architectural assumptions — the model
+# adapter interface (src/conflict_eval/models/base.py) supports adding any
+# other Hugging Face causal LM later by adding an entry here.
+#
+# `revision` pins an exact model snapshot for reproducibility. Leave null
+# to use the default (main) revision, but note that this makes the run
+# less exactly reproducible over time.
+
+models:
+  llama:
+    hf_model_id: meta-llama/Llama-3.1-8B-Instruct
+    revision: null
+    adapter: hf_causal
+    requires_gated_access: true
+    dtype: bfloat16
+    device_map: auto
+
+  qwen:
+    hf_model_id: Qwen/Qwen2.5-7B-Instruct
+    revision: null
+    adapter: hf_causal
+    requires_gated_access: false
+    dtype: bfloat16
+    device_map: auto
+
+  dummy:
+    hf_model_id: null
+    revision: null
+    adapter: dummy
+    requires_gated_access: false
+    dtype: null
+    device_map: null
+
+# Deterministic generation settings shared by all real-model runs.
+# do_sample=false is used directly (greedy decoding) rather than relying
+# only on temperature=0, per docs/methodology.md.
+generation:
+  do_sample: false
+  max_new_tokens: 32
+  num_beams: 1

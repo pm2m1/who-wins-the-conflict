@@ -1,0 +1,20 @@
+# Prompt template versions. Each entry pins a version string (stored on
+# every result record) to a template file under prompts/, so a later
+# template edit does not silently change the meaning of old results.
+
+baseline:
+  version: v1
+  template: prompts/baseline.txt
+
+evidence:
+  version: v1
+  template: prompts/evidence.txt
+
+source_calibration:
+  version: v1
+  template: prompts/source_calibration.txt
+
+# Evidence template version recorded separately on experimental records,
+# since the evidence snippet and the surrounding experimental prompt can
+# in principle version independently.
+evidence_template_version: v1
