@@ -55,25 +55,31 @@ Interpretation is restricted to genuine conflict trials — see
   (`akariasai/PopQA`, test split) — see `docs/reference_implementations.md`
   and `data/README.md` for recreation instructions. Not committed to this
   repository.
-- Real-model adapter/scoring validation: **partially validated**. The
-  real Qwen2.5-7B-Instruct tokenizer and chat template were downloaded
-  (tokenizer/config files only, ~11MB — no model weights) and used to
-  confirm chat-template rendering, answer-token boundary/masking, and
-  determinism against real BPE tokenization
-  (`tests/test_hf_tokenizer_integration.py`, gated behind
-  `CONFLICT_EVAL_RUN_TOKENIZER_TESTS=1`). Actual log-probability scoring
-  on real model weights was not run: this environment has no CUDA GPU and
-  insufficient free RAM for safe CPU inference of a ~15GB bf16 model —
-  see `docs/decisions.md` ("Real-model validation blocked by insufficient
-  RAM"). Use `diagnose-score` (above) to complete this validation once
-  adequate compute is available.
-- Real 8B/7B model runs (baseline screening, source calibration, the
-  C0-C4 pilot itself): **not yet run**. This requires an explicit,
-  separately-initiated command with the intended model, per
-  `docs/pilot_protocol.md`, and — per the point above — a machine with a
-  GPU or substantially more free RAM than is available here.
-  Llama-3.1-8B-Instruct additionally requires gated Hugging Face access
-  that has not been provisioned in this environment.
+- Real-model infrastructure validation: **completed**, on Google Colab
+  (NVIDIA Tesla T4 GPU), using `Qwen/Qwen2.5-3B-Instruct` strictly as an
+  infrastructure-validation stand-in — not as a research or pilot model.
+  Real model weights were loaded (float16, CUDA) under an exactly
+  resolved and pinned Hugging Face revision, and real teacher-forced
+  log-probability scoring was empirically validated against actual model
+  logits: deterministic generation, `Answer:` scoring-prefix alignment,
+  candidate token boundary handling, A/B vs. B/A score-order invariance,
+  repeated-score determinism, multi-token candidate scoring, length
+  normalization, and punctuation/token-boundary reconstruction. A real,
+  pinned PopQA download and a real 20-item deterministic baseline smoke
+  screen were also run, the latter twice (before/after the baseline
+  abstention fix, same items/revision/raw generations) to independently
+  confirm that fix on real model output. Full detail, exact SHAs, and
+  before/after counts are in `docs/decisions.md`, "Real-model
+  infrastructure validation on Google Colab". This is infrastructure
+  validation only — it is not a pilot run, an experiment result, or a
+  research finding, and none of it used the intended research model.
+- Real 7B/8B research-model runs (baseline screening, source calibration,
+  the C0-C4 pilot itself, all with the actual intended models): **not yet
+  run**. `Qwen/Qwen2.5-7B-Instruct` remains the intended research model
+  and has not been run; `Llama-3.1-8B-Instruct` has not been run and
+  additionally requires gated Hugging Face access not yet provisioned.
+  Source calibration and C0-C4 have not been run. No pilot results or
+  scientific conclusions exist yet.
 - **Pilot status: not yet run.**
 
 ## Repository layout

@@ -183,9 +183,15 @@ model was not loaded or run. Only the model's tokenizer/config files
 weights) were downloaded, to validate chat-template rendering and
 answer-token boundary/masking logic against the real tokenizer
 independently of the compute-heavy forward pass — see
-`tests/test_hf_tokenizer_integration.py`. Full logit/log-probability
-validation on real model outputs remains open until adequate compute
-(a GPU, or a machine with substantially more free RAM) is available.
+`tests/test_hf_tokenizer_integration.py`.
+
+**Update:** this local environment still has no GPU and insufficient RAM
+for CPU inference of a ~15GB bf16 model, and that has not changed. Real
+logit/log-probability validation was instead performed on separate
+GPU-equipped compute (Google Colab), using a smaller model as an
+infrastructure-validation stand-in rather than waiting on this
+environment's hardware — see "Real-model infrastructure validation on
+Google Colab" below for what was actually run and confirmed.
 
 ## PopQA row count discrepancy
 
@@ -457,3 +463,76 @@ before baseline screening had produced any data used in, or intended for,
 the real pilot, source calibration, or C0-C4. Nothing needed to be rerun
 for research purposes — only the screening code needed correcting before
 the real pilot uses it.
+
+## Real-model infrastructure validation on Google Colab
+
+This is a record of **infrastructure validation**, not a pilot run, not
+an experiment result, and not a research finding. `Qwen/Qwen2.5-3B-Instruct`
+was used strictly as a stand-in to validate the model-adapter and
+scoring code paths on real GPU hardware; it is not, and does not become,
+a research/pilot model for this project. The intended research model
+remains `Qwen/Qwen2.5-7B-Instruct` (per `configs/models.yaml`), which has
+not been run, alongside `meta-llama/Llama-3.1-8B-Instruct`.
+
+**Environment:** Google Colab, NVIDIA Tesla T4 GPU. Model loaded in
+`float16` on CUDA (this local repository's own `configs/models.yaml`
+still specifies `bfloat16`; the Colab session used `float16`, a deliberate
+adaptation to the T4, which lacks native bfloat16 tensor-core support —
+not a change to the checked-in config).
+
+**Model revision pinning (`docs/decisions.md`, "Resolve, pin, load,
+record"):** exact resolution succeeded before loading. Observed pinned
+SHA: `aa8e72537993ba99e69dfaafa59ed015b17504d1`. Real model weights loaded
+successfully under that pinned revision.
+
+**Teacher-forced scoring, empirically checked against real model logits:**
+
+- deterministic generation
+- `Answer: ` scoring-prefix alignment (docs/decisions.md, "Scoring prefix
+  must include the Answer: field label")
+- candidate token boundary handling
+- A/B versus B/A score-order invariance (scoring one candidate does not
+  affect the independently-computed score of the other)
+- repeated-score determinism (scoring the same candidate twice under the
+  same prompt gives identical results)
+- multi-token candidate scoring
+- length normalization
+- punctuation/token-boundary reconstruction
+
+Example diagnostic (via `diagnose-score`): for "What is the capital of
+France?", "Paris" received a much higher normalized sequence
+log-probability than "London", and the model's own greedy generation
+also produced "Paris" — the scoring and generation pathways agree, on a
+real model, for at least this case.
+
+**PopQA preparation, real and pinned (`docs/decisions.md`, "Resolve, pin,
+load, record"):** resolved dataset SHA
+`098765c79ea10a2cb19c828324e33281b8336ec0` (the same commit observed
+earlier during local `HfApi().dataset_info()` metadata-only validation —
+consistent, since "main" had not moved). The pinned test snapshot
+contained 14,267 rows, matching what `docs/methodology.md` §1 already
+documents as the observed count for this pinned revision (distinct from
+the Hugging Face dataset card's stated 14,300).
+
+**20-item baseline smoke screen, run twice, before and after the
+abstention fix:** deterministic, `Qwen/Qwen2.5-3B-Instruct`, same 20 item
+IDs, same model revision, same raw generations in both runs (confirmed,
+not assumed) — only the screening *code* differed:
+
+| | KC | KW | excluded | 
+|---|---|---|---|
+| before commit `72928b7` | 1 | 19 | 0 |
+| after commit `72928b7` | 1 | 0 | 19 (all `exclusion_reason = baseline_uncertain`) |
+
+No excluded record contained `memory_answer`, `conflicting_context_answer`,
+`memory_logprob_normalized`, `conflicting_answer_logprob_normalized`,
+`parametric_margin`, or `margin_bin` — confirming, on a real model and
+real generations (not mocked/scripted, unlike `tests/test_cmd_screen_eligibility.py`),
+that the fix in commit `72928b7fd624394526e7b4ba3c1cd22439d30f2a` behaves
+as intended: the 19 abstentions that previously became meaningless "KW"
+memory candidates are now correctly excluded and margin-free.
+
+**What remains unrun:** `Qwen/Qwen2.5-7B-Instruct` (the intended research
+model), `Llama-3.1-8B-Instruct`, source calibration, and the C0-C4
+experimental conditions. No pilot results or scientific conclusions exist
+yet — this entry validates infrastructure only.
