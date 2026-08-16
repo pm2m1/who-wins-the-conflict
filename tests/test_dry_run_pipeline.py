@@ -38,7 +38,7 @@ BASELINE_TEMPLATE = (
     "Use the information you consider most reliable.\n\n"
     "Evidence:\n{evidence_or_none}\n\nQuestion:\n{question}\n\n"
     "Respond using exactly this format:\n\nAnswer: <short answer>\n"
-    "Decision: answer | uncertain\nConfidence: <integer from 0 to 100>\n"
+    "Decision: <answer or uncertain>\nConfidence: <integer from 0 to 100>\n"
 )
 
 # SYNTHETIC fixture: a small same-relation pool for foil sampling.

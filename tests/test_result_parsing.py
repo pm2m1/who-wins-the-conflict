@@ -1,3 +1,5 @@
+import pytest
+
 from conflict_eval.evaluation.parse import parse_response
 from conflict_eval.experiment.resume import make_record_key
 from conflict_eval.io.results import ResultWriter
@@ -51,6 +53,67 @@ def test_completely_unstructured_response_is_malformed():
     raw = "I think it might be Paris, but I'm not fully sure."
     parsed = parse_response(raw)
     assert parsed.malformed
+
+
+# --- strict Decision-line parsing -------------------------------------------
+#
+# A real Qwen2.5-7B-Instruct generation under the old prompt/parser
+# produced "Decision: answer | certain", which the old prefix-matching
+# regex accepted as decision="answer" — this matters because parsed.decision
+# controls baseline KC/KW eligibility (docs/decisions.md, "Decision output
+# format made strict").
+
+
+def test_decision_answer_is_valid():
+    raw = "Answer: Paris\nDecision: answer\nConfidence: 100"
+    parsed = parse_response(raw)
+    assert parsed.decision == "answer"
+    assert not parsed.malformed
+
+
+def test_decision_uncertain_is_valid():
+    raw = "Answer: Paris\nDecision: uncertain\nConfidence: 20"
+    parsed = parse_response(raw)
+    assert parsed.decision == "uncertain"
+    assert not parsed.malformed
+
+
+def test_decision_is_case_insensitive():
+    raw = "Answer: Paris\nDecision: ANSWER\nConfidence: 90"
+    parsed = parse_response(raw)
+    assert parsed.decision == "answer"
+    assert not parsed.malformed
+
+
+def test_decision_allows_ordinary_surrounding_whitespace():
+    raw = "Answer: Paris\nDecision:   answer   \nConfidence: 90"
+    parsed = parse_response(raw)
+    assert parsed.decision == "answer"
+    assert not parsed.malformed
+
+
+@pytest.mark.parametrize(
+    "decision_line",
+    [
+        "Decision: answer | certain",
+        "Decision: answer | uncertain",
+        "Decision: answer blah",
+        "Decision: uncertain because I do not know",
+        "Decision: answer/uncertain",
+    ],
+)
+def test_decision_rejects_trailing_junk_after_a_valid_prefix(decision_line):
+    raw = f"Answer: Paris\n{decision_line}\nConfidence: 100"
+    parsed = parse_response(raw)
+    assert parsed.decision is None
+    assert parsed.malformed is True
+
+
+def test_missing_decision_line_entirely_is_malformed_with_none_decision():
+    raw = "Answer: Paris\nConfidence: 100"
+    parsed = parse_response(raw)
+    assert parsed.decision is None
+    assert parsed.malformed is True
 
 
 # --- resumable record-key behavior -----------------------------------------

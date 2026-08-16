@@ -225,8 +225,11 @@ purpose of the experiment:
     Respond using exactly this format:
 
     Answer: <short answer>
-    Decision: answer | uncertain
+    Decision: <answer or uncertain>
     Confidence: <integer from 0 to 100>
+
+    For Decision, write exactly one word: answer or uncertain.
+    Do not write both choices and do not use the | symbol.
 
 No chain-of-thought, explanation, or rationale is requested. Confidence is
 exploratory only and is not treated as a calibrated probability without

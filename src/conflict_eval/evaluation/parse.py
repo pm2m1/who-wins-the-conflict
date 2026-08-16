@@ -11,7 +11,15 @@ import dataclasses
 import re
 
 _ANSWER_RE = re.compile(r"Answer:\s*(.+)")
-_DECISION_RE = re.compile(r"Decision:\s*(answer|uncertain)", re.IGNORECASE)
+# Line-anchored and exact: the ENTIRE Decision line (surrounding
+# whitespace aside) must be exactly "answer" or "uncertain" — a prefix
+# match here previously accepted trailing junk such as
+# "Decision: answer | certain" or "Decision: answer blah" as decision =
+# "answer", which a real Qwen2.5-7B-Instruct generation reproduced
+# (docs/decisions.md, "Decision output format made strict"). MULTILINE so
+# ^/$ anchor to individual lines within the full multi-line response,
+# not just the whole string.
+_DECISION_RE = re.compile(r"^Decision:\s*(answer|uncertain)\s*$", re.IGNORECASE | re.MULTILINE)
 _CONFIDENCE_RE = re.compile(r"Confidence:\s*(-?\d+)")
 
 

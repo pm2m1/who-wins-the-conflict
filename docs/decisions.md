@@ -536,3 +536,85 @@ memory candidates are now correctly excluded and margin-free.
 model), `Llama-3.1-8B-Instruct`, source calibration, and the C0-C4
 experimental conditions. No pilot results or scientific conclusions exist
 yet — this entry validates infrastructure only.
+
+## Decision output format made strict
+
+The actual intended research model, `Qwen/Qwen2.5-7B-Instruct`, was run
+unquantized in FP16 on a free Colab T4 (GPU+CPU offload) — still
+infrastructure validation, not a pilot run. A real-model diagnostic
+exposed a prompt/parser ambiguity that had to be fixed before any 7B
+screening or research data could be produced.
+
+The committed prompt (`prompts/baseline.txt`) previously requested:
+
+    Decision: answer | uncertain
+
+with the pipe intended to mean "choose one." The real Qwen2.5-7B-Instruct
+model instead partially reproduced the pipe syntax literally, generating:
+
+    Answer: Paris
+    Decision: answer | certain
+    Confidence: 100
+
+The old Decision parser, `Decision:\s*(answer|uncertain)` with no line
+anchoring, matches anywhere in the text and accepts a valid prefix even
+if trailing junk follows — so `"Decision: answer | certain"`,
+`"Decision: answer | uncertain"`, and `"Decision: answer blah"` were all
+silently parsed as `decision = "answer"`. This matters directly:
+`parsed.decision` controls baseline KC/KW eligibility
+(`evaluation/baseline_eligibility.py`), so a response the model did not
+actually commit to unambiguously could still have become a KC/KW memory
+candidate.
+
+Fix, in two parts:
+
+1. The prompt now reads:
+
+       Answer: <short answer>
+       Decision: <answer or uncertain>
+       Confidence: <integer from 0 to 100>
+
+       For Decision, write exactly one word: answer or uncertain.
+       Do not write both choices and do not use the | symbol.
+
+   (`prompts/baseline.txt`; the canonical prompt quoted in
+   `docs/phase2_research_design.md`, "Prompt design," was updated to
+   match exactly, and the same wording was mirrored into synthetic
+   prompt fixtures in `tests/test_dry_run_pipeline.py` and
+   `tests/test_hf_tokenizer_integration.py` for consistency — neither of
+   those tests parses its own fixture text, so this is a documentation
+   consistency fix, not a behavior fix, for those two files.)
+
+2. `evaluation/parse.py`'s Decision regex is now line-anchored and exact:
+   `^Decision:\s*(answer|uncertain)\s*$`, case-insensitive and
+   multiline, so `^`/`$` bind to individual lines within the full
+   response rather than the whole string. A Decision line is accepted
+   only if, after "Decision:" and surrounding whitespace, the entire
+   rest of that line is exactly "answer" or "uncertain" (any case).
+   `"Decision: answer | certain"`, `"Decision: answer | uncertain"`,
+   `"Decision: answer blah"`, `"Decision: uncertain because ..."`, and
+   `"Decision: answer/uncertain"` are all now rejected: `parsed.decision
+   = None` and `parsed.malformed = True`, which — via the existing
+   malformed-response handling in `cli.py:cmd_screen` — routes the item
+   to the syntactic-malformed exclusions stream, never KC/KW.
+
+A Colab-only strict-prompt test on the same loaded, already-pinned 7B
+model (revision `aa8e72537993ba99e69dfaafa59ed015b17504d1`, from "Real-model
+infrastructure validation on Google Colab" above), using the wording now
+committed here, produced exactly:
+
+    Answer: Paris
+    Decision: answer
+    Confidence: 100
+
+which the current parser accepts as `answer='Paris'`, `decision='answer'`,
+`confidence=100`, `malformed=False` — confirming the new prompt reliably
+elicits the strict format from the real research model, not just from the
+regex's own test suite.
+
+This was discovered before any 7B PopQA screening or research results
+were produced, so no research results were invalidated. It compounds with
+the earlier baseline-abstention fix (`72928b7fd624394526e7b4ba3c1cd22439d30f2a`):
+that fix ensures an *unambiguous* abstention cannot become KC/KW; this fix
+ensures the model cannot produce an *ambiguous* Decision value that the
+parser would have silently resolved one way or the other.

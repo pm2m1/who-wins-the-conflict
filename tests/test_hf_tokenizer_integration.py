@@ -45,7 +45,7 @@ def _render_prefix(tokenizer, question: str) -> str:
             "content": (
                 "You are answering a factual question.\n\nEvidence:\nNone\n\n"
                 f"Question:\n{question}\n\nRespond using exactly this format:\n\n"
-                "Answer: <short answer>\nDecision: answer | uncertain\n"
+                "Answer: <short answer>\nDecision: <answer or uncertain>\n"
                 "Confidence: <integer from 0 to 100>\n"
             ),
         }
