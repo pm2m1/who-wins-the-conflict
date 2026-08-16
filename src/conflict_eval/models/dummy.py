@@ -34,6 +34,12 @@ class DummyModelAdapter(BaseModelAdapter):
     ) -> None:
         self.model_id = model_id
         self.model_revision = "dummy"
+        # No real model is loaded, so there is no requested/resolved
+        # revision distinction to make — both are explicitly None rather
+        # than a fabricated value (docs/decisions.md, "Exact model
+        # revision recording").
+        self.requested_revision = None
+        self.resolved_revision = None
         self.seed = seed
         self.context_adoption_rate = context_adoption_rate
 

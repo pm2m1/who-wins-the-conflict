@@ -8,6 +8,15 @@ dist/
 .venv/
 venv/
 
+# Local secrets — this project currently reads no environment variables
+# for credentials, but any future .env (e.g. HF_TOKEN for gated model
+# access) must never be committed. .env.example is a template and is
+# explicitly kept even though the .env* pattern would otherwise exclude
+# it (docs/decisions.md, "Local secret-file protection").
+.env
+.env.*
+!.env.example
+
 # Test / lint
 .pytest_cache/
 .ruff_cache/

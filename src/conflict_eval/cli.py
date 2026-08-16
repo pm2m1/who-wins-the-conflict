@@ -162,6 +162,7 @@ def cmd_screen(model_key: str, config_path: str) -> None:
         record: dict[str, Any] = {
             "model_id": model.model_id,
             "model_revision": model.model_revision,
+            "requested_revision": getattr(model, "requested_revision", None),
             "item_id": item["id"],
             "subject": item.get("subj"),
             "relation": item.get("prop"),
@@ -274,7 +275,11 @@ def cmd_diagnose_score(
     prompt = _baseline_prompt(prompts_config, question)
     messages = [{"role": "user", "content": prompt}]
 
-    print(f"model_id={model.model_id} model_revision={model.model_revision}")
+    print(
+        f"model_id={model.model_id} model_revision={model.model_revision} "
+        f"(requested_revision={getattr(model, 'requested_revision', None)!r}, "
+        f"resolved_revision={getattr(model, 'resolved_revision', None)!r})"
+    )
     print(f"question={question!r}")
     print("messages (safe readable representation, not raw tensors):")
     print(f"  [{{'role': 'user', 'content': <{len(prompt)} chars, see prompts/baseline.txt>}}]")

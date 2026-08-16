@@ -32,10 +32,21 @@ class BaseModelAdapter(abc.ABC):
 
     `model_id` and `model_revision` are stored on every result record for
     reproducibility (docs/methodology.md, "Reproducibility notes").
+
+    `model_revision` is the field existing result records already use; it
+    holds the best available revision identifier — the resolved commit SHA
+    when one could be determined, otherwise whatever `requested_revision`
+    was (which may itself be `None`). Adapters that can distinguish the
+    two also expose `requested_revision` (what configuration asked for)
+    and `resolved_revision` (the concrete snapshot actually loaded, or
+    `None` if that could not be determined) — see
+    `docs/decisions.md`, "Exact model revision recording".
     """
 
     model_id: str
     model_revision: str | None
+    requested_revision: str | None
+    resolved_revision: str | None
 
     @abc.abstractmethod
     def generate(self, messages: list[Message], generation_config: GenerationConfig) -> str:

@@ -5,8 +5,10 @@
 # other Hugging Face causal LM later by adding an entry here.
 #
 # `revision` pins an exact model snapshot for reproducibility. Leave null
-# to use the default (main) revision, but note that this makes the run
-# less exactly reproducible over time.
+# to use the default (main) revision. Either way, HFCausalAdapter records
+# the exact resolved Hugging Face commit SHA it actually loaded (not just
+# this requested value) on every result record — see
+# docs/decisions.md, "Exact model revision recording".
 
 models:
   llama:

@@ -31,11 +31,77 @@ POPQA_FIELDS = [
 ]
 
 
+def resolve_dataset_revision(hf_dataset_id: str) -> str | None:
+    """Resolve the exact commit SHA of the locally cached snapshot of
+    `hf_dataset_id` actually used, via `huggingface_hub`'s local cache
+    index (`scan_cache_dir`) — no extra network call beyond whatever
+    `datasets.load_dataset` already made (docs/decisions.md, "Exact
+    PopQA dataset revision recording").
+
+    `huggingface_hub` is not a direct project dependency here: it is
+    already installed transitively via `transformers`/`datasets`, so it
+    is imported lazily rather than re-declared in pyproject.toml.
+
+    Returns None — never a guessed value — if the cache cannot be
+    scanned, the repo is not found in it (e.g. a non-default cache
+    location), or huggingface_hub is unavailable for any reason.
+    """
+    try:
+        import huggingface_hub
+    except ImportError:
+        return None
+
+    try:
+        cache_info = huggingface_hub.scan_cache_dir()
+    except Exception:  # noqa: BLE001 — cache-scan failure must degrade to "unavailable", not crash the pipeline
+        return None
+
+    matching_repos = [
+        repo
+        for repo in cache_info.repos
+        if repo.repo_id == hf_dataset_id and repo.repo_type == "dataset"
+    ]
+    if not matching_repos:
+        return None
+    revisions = list(matching_repos[0].revisions)
+    if not revisions:
+        return None
+
+    # Prefer the revision whose refs include "main" (the default branch,
+    # and what an unpinned `datasets.load_dataset` call resolves to);
+    # fall back to the most recently modified cached revision otherwise.
+    for revision in revisions:
+        if "main" in revision.refs:
+            return revision.commit_hash
+    return max(revisions, key=lambda r: r.last_modified).commit_hash
+
+
+def build_manifest(
+    hf_dataset_id: str,
+    split: str,
+    num_rows: int,
+    fields: list[str],
+    resolved_revision: str | None,
+) -> dict[str, Any]:
+    """Pure manifest-dict construction, factored out of download_raw so
+    the manifest schema (in particular, that `resolved_revision` is
+    always present, even as `None`) is unit-testable without a real
+    dataset download.
+    """
+    return {
+        "hf_dataset_id": hf_dataset_id,
+        "split": split,
+        "num_rows": num_rows,
+        "fields": fields,
+        "resolved_revision": resolved_revision,
+    }
+
+
 def download_raw(hf_dataset_id: str, split: str, raw_dir: str | Path) -> Path:
     """Download PopQA via `datasets.load_dataset` and dump it to
     `raw_dir` as JSONL, alongside a manifest recording the exact
-    identifier/split/revision resolved, for reproducibility
-    (docs/data/README.md).
+    identifier/split/resolved revision, for reproducibility
+    (data/README.md).
     """
     import datasets  # deferred: heavy, network-using dependency
 
@@ -47,12 +113,13 @@ def download_raw(hf_dataset_id: str, split: str, raw_dir: str | Path) -> Path:
     with open(out_path, "w", encoding="utf-8") as f:
         f.writelines(json.dumps(row) + "\n" for row in ds)
 
-    manifest = {
-        "hf_dataset_id": hf_dataset_id,
-        "split": split,
-        "num_rows": len(ds),
-        "fields": ds.column_names,
-    }
+    manifest = build_manifest(
+        hf_dataset_id=hf_dataset_id,
+        split=split,
+        num_rows=len(ds),
+        fields=ds.column_names,
+        resolved_revision=resolve_dataset_revision(hf_dataset_id),
+    )
     with open(raw_dir / "manifest.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 

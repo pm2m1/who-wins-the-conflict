@@ -147,12 +147,24 @@ equivalent pipeline is also exercised automatically by
 
 - All stochastic steps (candidate subsampling, foil sampling, decoding)
   are seeded via `configs/pilot.yaml`.
-- Every generation record stores model id, model revision (if resolvable),
-  the exact rendered prompt, prompt version, and generation config.
+- Every generation record stores model id, model revision, the exact
+  rendered prompt, prompt version, and generation config. `model_revision`
+  is the exact resolved Hugging Face commit SHA whenever one could be
+  determined (from local cache metadata, no extra download), not just the
+  requested `revision` from `configs/models.yaml` — see
+  `docs/decisions.md`, "Exact model revision recording".
 - Raw PopQA data is not committed (license on the dataset card is
   unstated); `data/README.md` documents exact recreation steps.
+  `data/raw/manifest.json` records the exact resolved dataset commit SHA
+  (`resolved_revision`) alongside the dataset id/split, when it can be
+  determined — see `docs/decisions.md`, "Exact PopQA dataset revision
+  recording".
 - Experiments are resumable: interrupting `run` and re-invoking it skips
   already-completed generations rather than duplicating them.
+- Secrets: this project currently has no `.env` file and reads no
+  credentials from the environment; `.gitignore` excludes `.env`/`.env.*`
+  (keeping any future `.env.example` trackable) so this stays true if that
+  changes later.
 
 ## Limitations
 

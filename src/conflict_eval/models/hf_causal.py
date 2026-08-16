@@ -30,7 +30,7 @@ class HFCausalAdapter(BaseModelAdapter):
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.model_id = hf_model_id
-        self.model_revision = revision
+        self.requested_revision = revision
         self._torch = torch
 
         torch_dtype = getattr(torch, dtype) if dtype else None
@@ -42,6 +42,25 @@ class HFCausalAdapter(BaseModelAdapter):
             device_map=device_map,
         )
         self.model.eval()
+
+        # transformers records the exact resolved commit SHA for the
+        # snapshot it loaded on `config._commit_hash`, extracted from the
+        # local Hugging Face Hub cache path (.../snapshots/<sha>/...) —
+        # this requires no extra network call beyond the load that already
+        # happened above (docs/decisions.md, "Exact model revision
+        # recording"). It is populated even when `revision` was left
+        # `None` ("main"), which is the common case that most needs a
+        # concrete, citable snapshot identifier. If the attribute is
+        # missing or empty (e.g. loading from a plain local directory, or
+        # a transformers version that does not expose it), this is left
+        # as None rather than guessed.
+        self.resolved_revision = getattr(self.model.config, "_commit_hash", None) or None
+        # model_revision is the field already used throughout result
+        # records (docs/methodology.md); it now prefers the resolved
+        # commit SHA and only falls back to the requested revision string
+        # when a concrete SHA could not be determined, so existing
+        # consumers of this field keep working without a schema change.
+        self.model_revision = self.resolved_revision or self.requested_revision
 
     def _render_prefix(self, messages: list[Message]) -> str:
         # add_generation_prompt=True appends the assistant-turn-start

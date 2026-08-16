@@ -211,3 +211,89 @@ working directory is outside the scope of writing project files and could
 disrupt any external references the researcher already has to this path.
 The Python package name (`conflict_eval`) and repository documentation are
 unaffected by this.
+
+## Local secret-file protection
+
+`.gitignore` did not previously mention `.env` files explicitly. Even
+though the project currently reads no environment variables for
+credentials (confirmed by inspection — no `os.environ`/`os.getenv` calls
+exist in `src/`), a future need (e.g. `HF_TOKEN` for gated Llama access)
+should never be one accidental `git add .` away from being committed.
+Added `.env`, `.env.*`, and a `!.env.example` exception (so a future
+template file documenting expected variables would remain trackable) to
+`.gitignore`. No `.env` or `.env.example` file exists in the repository;
+none was created, per the instruction not to invent one without an actual
+documented need. Verified with `git check-ignore` (`tests/test_gitignore_secrets.py`),
+not by asserting on `.gitignore`'s text content, so the test reflects
+git's actual matching behavior rather than a specific line's wording.
+
+## Exact model revision recording
+
+`HFCausalAdapter` previously stored only the `revision` argument passed
+in as `model_revision`, which stayed `None` whenever `configs/models.yaml`
+left `revision: null` (the default for both Llama and Qwen) — meaning
+real result records could not identify which concrete model snapshot was
+actually loaded, undermining reproducibility for any run that did not
+pin an explicit revision.
+
+Fix: after loading, `HFCausalAdapter` now reads
+`self.model.config._commit_hash`, which `transformers` populates with the
+exact resolved commit SHA extracted from the local Hugging Face Hub cache
+path (`.../snapshots/<sha>/...`) during the `from_pretrained` calls that
+already happened — this adds no extra network call or download beyond the
+load itself. Three attributes are now distinguished:
+
+- `requested_revision` — the `revision` value from configuration, possibly
+  `None`.
+- `resolved_revision` — the concrete commit SHA if one could be
+  determined, otherwise `None`. Never fabricated: if `config._commit_hash`
+  is missing or empty (e.g. loading from a plain local directory, or an
+  older/newer transformers version that does not expose the attribute),
+  this stays `None`.
+- `model_revision` — the field already used throughout result records and
+  `docs/methodology.md`; unchanged in name and meaning ("the revision to
+  cite for this run"), but now prefers `resolved_revision` and only falls
+  back to `requested_revision` when no concrete SHA is available.
+
+`DummyModelAdapter` gained matching `requested_revision`/`resolved_revision`
+attributes, both always `None` (no real model is loaded, so there is
+nothing to resolve), for interface consistency with `BaseModelAdapter`.
+`cmd_screen`'s baseline records gained an additional `requested_revision`
+field alongside the existing `model_revision` field, and `diagnose-score`'s
+printed output now shows both values — both additive changes, not a
+rename of any existing field. Validated against the real
+`Qwen/Qwen2.5-7B-Instruct` config (config.json only, not the model
+weights — `tests/test_hf_tokenizer_integration.py::test_config_exposes_resolved_commit_hash`,
+opt-in via `CONFLICT_EVAL_RUN_TOKENIZER_TESTS=1`) and against mocked
+`transformers` internals for the fallback/unavailable paths
+(`tests/test_hf_causal_revision.py`), so no 7B/8B weights were downloaded
+to validate this.
+
+## Exact PopQA dataset revision recording
+
+`data/raw/manifest.json` previously recorded `hf_dataset_id`, `split`,
+`num_rows`, and `fields`, but no exact dataset revision — its docstring
+claimed otherwise, which was inaccurate and has been corrected.
+
+Fix: `conflict_eval.data.popqa.resolve_dataset_revision` scans the local
+Hugging Face Hub cache via `huggingface_hub.scan_cache_dir()` (a public,
+documented API) for the dataset repo, and returns the commit SHA of
+whichever cached revision's refs include `"main"`, falling back to the
+most recently modified cached revision if no `"main"` ref is present. This
+is purely local — it adds no network call beyond whatever
+`datasets.load_dataset` already made — verified against this
+environment's real, already-cached `akariasai/PopQA` snapshot during
+implementation (interactively, matching the `refs/main` file's contents
+byte for byte), and covered by mocked-cache unit tests
+(`tests/test_dataset_revision.py`) for the CI-reproducible path. The
+result is stored in the manifest as `resolved_revision`; it is `None`,
+never guessed, when the local cache cannot be scanned or the repo is not
+found in it. `huggingface_hub` is not a new direct dependency —
+it is already installed transitively via `transformers`/`datasets`, so
+`pyproject.toml` was not changed.
+
+Manifest construction was factored out into a small pure function,
+`build_manifest`, purely so this schema (in particular, that
+`resolved_revision` is always present, even as `None`) is unit-testable
+without a real dataset download; `download_raw`'s behavior is otherwise
+unchanged.

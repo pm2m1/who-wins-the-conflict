@@ -1,10 +1,13 @@
 """Real-tokenizer validation of chat-template rendering and answer-token
-boundary/masking logic (models/hf_causal.py, scoring/sequence_logprob.py).
+boundary/masking logic (models/hf_causal.py, scoring/sequence_logprob.py),
+plus real-world validation of the model-revision resolution mechanism
+(docs/decisions.md, "Exact model revision recording").
 
-This downloads ONLY the Qwen2.5-7B-Instruct tokenizer files (a few MB —
-vocab/merges/tokenizer_config, not the ~15GB model weights) so the exact
-chat template and BPE tokenizer this project targets can be exercised for
-real, without the compute cost of loading and running the model itself.
+This downloads ONLY the Qwen2.5-7B-Instruct tokenizer and config files (a
+few MB combined — vocab/merges/tokenizer_config/config.json, not the
+~15GB model weights) so the exact chat template, BPE tokenizer, and
+commit-hash metadata this project targets can be exercised for real,
+without the compute cost of loading and running the model itself.
 
 Skipped by default per project convention (no test triggers a network call
 or download unless explicitly opted in): set
@@ -142,3 +145,19 @@ def test_answer_prefix_changes_real_tokenization_at_the_boundary(tokenizer):
     # context precedes the candidate, not whether masking still works.
     assert tokenizer.decode(bare_ids[bare_boundary:]).strip() == "Paris"
     assert tokenizer.decode(labeled_ids[labeled_boundary:]).strip() == "Paris"
+
+
+def test_config_exposes_resolved_commit_hash():
+    # Real-world confirmation of the mechanism HFCausalAdapter relies on
+    # (docs/decisions.md, "Exact model revision recording"): loading only
+    # the config (a few KB, not the ~15GB weights) is enough for
+    # transformers to populate config._commit_hash with the actual
+    # resolved snapshot SHA, extracted from the local HF Hub cache path
+    # with no extra network call beyond the config load itself.
+    from transformers import AutoConfig
+
+    config = AutoConfig.from_pretrained(MODEL_ID)
+    commit_hash = getattr(config, "_commit_hash", None)
+    assert commit_hash is not None
+    assert len(commit_hash) >= 7  # short SHAs are at least this long
+    assert all(c in "0123456789abcdef" for c in commit_hash)
