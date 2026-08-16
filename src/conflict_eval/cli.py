@@ -36,6 +36,10 @@ from conflict_eval.data.sampling import (
     compute_margin_bin_edges,
     sample_balanced_across_bins,
 )
+from conflict_eval.evaluation.baseline_eligibility import (
+    classify_baseline_eligibility,
+    is_clean_factual_candidate,
+)
 from conflict_eval.evaluation.classify import classify_answer, is_context_adopted, is_final_correct
 from conflict_eval.evaluation.parse import parse_response
 from conflict_eval.experiment.conditions import build_conditions
@@ -171,6 +175,8 @@ def cmd_screen(model_key: str, config_path: str) -> None:
             "gold_aliases": aliases,
             "raw_generation": raw_generation,
             "parsed_answer": parsed.answer,
+            "parsed_decision": parsed.decision,
+            "parsed_confidence": parsed.confidence,
             "normalized_answer": normalize_answer(parsed.answer),
             "baseline_correct": baseline_correct,
             "prompt_version": prompt_version,
@@ -178,6 +184,19 @@ def cmd_screen(model_key: str, config_path: str) -> None:
             "generation_config": gen_config.as_dict(),
             "manual_review": False,
         }
+
+        # Eligibility (Decision == "answer", not an explicit abstention)
+        # is checked BEFORE KC/KW assignment, not just before the KW
+        # cleanliness check — a gold-matching answer accompanied by
+        # "Decision: uncertain" must not become KC either
+        # (docs/decisions.md, "Baseline abstentions must not become KC/KW
+        # memory candidates").
+        eligibility = classify_baseline_eligibility(parsed.answer, parsed.decision, parsed.malformed)
+        if not eligibility.eligible:
+            record["knowledge_group"] = "excluded"
+            record["exclusion_reason"] = eligibility.reason
+            baseline_records.append(record)
+            continue
 
         if baseline_correct:
             foil = sample_foil(item, relation_index, rng)
@@ -193,8 +212,9 @@ def cmd_screen(model_key: str, config_path: str) -> None:
             memory_answer, conflicting_answer = gold, foil.foil_answer
         else:
             # A clean KW candidate must be a short, unambiguous factual
-            # guess — not a hedge, list, or malformed fragment.
-            if len(parsed.answer.split()) > 6 or "," in parsed.answer or " or " in parsed.answer.lower():
+            # guess — not a hedge, list, or malformed fragment. Borderline
+            # cases are routed to manual_review rather than forced into KW.
+            if not is_clean_factual_candidate(parsed.answer):
                 record["knowledge_group"] = "manual_review"
                 record["manual_review"] = True
                 baseline_records.append(record)

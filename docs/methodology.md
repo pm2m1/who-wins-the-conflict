@@ -9,8 +9,15 @@ methodological choices were made.
 ## 1. Dataset and preprocessing
 
 **Source:** `akariasai/PopQA`, Hugging Face `datasets` identifier, test
-split (14,300 rows). Fields used: `id`, `subj`, `prop`, `obj`, `s_aliases`,
-`o_aliases`, `question`, `possible_answers`.
+split. Fields used: `id`, `subj`, `prop`, `obj`, `s_aliases`, `o_aliases`,
+`question`, `possible_answers`. The Hugging Face dataset card states
+14,300 test rows; the pinned `revision="main"` snapshot actually resolved
+and downloaded during implementation (`resolve -> pin -> load -> record`,
+see `docs/decisions.md`) contained 14,267 rows. These are not claimed to
+be the same figure — the dataset-card count is a description of the
+repository at some point in time, not a guarantee about any specific
+pinned commit; `data/raw/manifest.json`'s `num_rows` is the authoritative
+count for any given real run.
 
 **Pipeline stages** (`data/raw/` -> `data/interim/` -> `data/processed/`,
 implemented in `src/conflict_eval/data/popqa.py`):
@@ -138,15 +145,34 @@ sequences is the candidate answer text itself.
 model, deterministically, then:
 
 1. Parses the response into `Answer` / `Decision` / `Confidence` fields
-   (`evaluation/parse.py`); malformed responses are marked
-   `manual_review = true` rather than forced into a class.
+   (`evaluation/parse.py`); syntactically malformed responses (no
+   locatable answer or decision field) are logged to a separate
+   exclusions stream, not written as a baseline record at all.
 2. Normalizes and matches the parsed answer against gold/aliases
    (`evaluation/answer_match.py`).
-3. Classifies the item as `KC` (answer matches gold/alias), `KW` (answer is
-   a clean, unambiguous, non-matching candidate), or `excluded` /
-   `manual_review` (malformed, ambiguous, multi-valued, or otherwise
-   unsuitable), per model.
-4. Computes the conflict-specific parametric margin for every KC and KW
+3. Checks baseline *eligibility* before KC/KW assignment
+   (`evaluation/baseline_eligibility.py`): a syntactically well-formed
+   response is only eligible to become KC or KW if `Decision == "answer"`
+   and the answer text is not itself an explicit uncertainty/refusal
+   marker (`"uncertain"`, `"unknown"`, `"i don't know"`, `"i do not
+   know"`, `"cannot determine"`, `"can't determine"`, checked after the
+   same normalization used for answer matching). This check runs before
+   the gold-match comparison, so an abstention that happens to restate
+   the gold answer text is still not eligible for KC, and an abstention
+   never becomes a KW memory candidate — a real 20-item smoke screen with
+   Qwen2.5-3B-Instruct found the model emitting `Answer:
+   uncertain\nDecision: uncertain` (and, inconsistently, sometimes
+   `Decision: answer`) far more often than expected; see
+   `docs/decisions.md`, "Baseline abstentions must not become KC/KW
+   memory candidates". Ineligible responses are recorded with
+   `knowledge_group = "excluded"` and `exclusion_reason =
+   "baseline_uncertain"` — kept as a baseline record (not the malformed
+   exclusions stream) since the response itself was syntactically valid.
+4. Classifies eligible items as `KC` (answer matches gold/alias), `KW`
+   (answer does not match gold/alias and is additionally a clean,
+   unambiguous candidate — short, no comma, no "or"), or `manual_review`
+   (an eligible but not obviously clean non-matching answer), per model.
+5. Computes the conflict-specific parametric margin for every KC and KW
    item (using the relevant foil for KC, gold for KW) and assigns a
    within-pool quantile `margin_bin` (`low`/`medium`/`high`) for pilot
    sampling convenience only.

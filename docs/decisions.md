@@ -392,3 +392,68 @@ unless someone deliberately runs it, and gives a way to periodically
 re-confirm the chat-template/tokenizer assumptions this project's scoring
 code depends on still hold against the real Hugging Face repo, without
 coupling that check to every ordinary push.
+
+## Baseline abstentions must not become KC/KW memory candidates
+
+The first real-model baseline screen — 20 PopQA items,
+`Qwen/Qwen2.5-3B-Instruct`, run as infrastructure validation, not a
+research result — surfaced a genuine methodological bug: of 20 baseline
+records (KC=1, KW=19, manual_review=0), 18 of the 19 "KW" records had
+`parsed_answer = "uncertain"` as the supposed memory answer (e.g.
+`memory_answer = "uncertain"`, `conflicting_context_answer = "jazz"`).
+
+The model was abstaining far more often than expected on this small
+sample, and the prior screening logic had no check for that: it only
+required (a) the baseline answer not match gold, and (b) the answer text
+be short with no comma/"or" — "uncertain" trivially satisfies both. The
+resulting "parametric margin," `score("uncertain") - score(gold)`, is not
+the quantity `docs/phase2_research_design.md` (H1) defines: a KW margin
+is supposed to measure resistance of the model's *wrong factual guess*
+against the correct answer, and an abstention is not a wrong factual
+guess — it is the model declining to guess at all. Treating it as one
+would have silently fed a meaningless quantity into RQ1/H1's primary
+analysis had this not been caught before the real pilot.
+
+Corrective rule, implemented in the new
+`evaluation/baseline_eligibility.py` (`classify_baseline_eligibility`,
+`is_clean_factual_candidate`) and applied in `cli.py:cmd_screen` before
+any KC/KW assignment: a baseline response is only eligible for KC or KW
+if `parsed.decision == "answer"` **and** its answer text, after the same
+normalization used for gold matching, is not an explicit uncertainty
+marker (`"uncertain"`, `"unknown"`, `"i don't know"`, `"i do not know"`,
+`"cannot determine"`, `"can't determine"`) — this second check catches a
+model that emits `Decision: answer` inconsistently alongside an
+abstention-shaped answer, which is exactly what made 18/19 records slip
+through the old check. This eligibility check runs before the
+gold-match/KC branch too, not only before the KW-cleanliness branch: a
+response matching gold but carrying `Decision: uncertain` must not become
+KC either, since KC and KW both represent usable parametric answers, not
+abstentions.
+
+Ineligible-but-syntactically-valid responses are recorded with
+`knowledge_group = "excluded"` and `exclusion_reason =
+"baseline_uncertain"` — kept in the baseline record stream (not the
+separate malformed-response exclusions stream) for auditability, since
+the response itself parsed successfully; they receive no
+`memory_answer`/`conflicting_context_answer`/`parametric_margin`/
+`margin_bin` at all, and margin-bin computation (which iterates only
+`knowledge_group in {"KC", "KW"}`) was already structurally unable to
+include them. `parsed_decision` and `parsed_confidence` are now also
+stored on every baseline record (additive; `parsed_answer` and
+`raw_generation` are unchanged), so the full parsed response — not just
+the derived classification — is auditable after the fact.
+
+This is a small, explicit marker list, not an attempt to catch every
+possible hedge or refusal phrasing (e.g. "I'm not sure" is not on it) —
+consistent with this project's general preference for narrow, defensible,
+documented heuristics over broad automatic judgment. An answer that is
+not one of these explicit markers but still fails the shape-based
+clean-candidate check (too long, contains a comma, contains " or ") is
+routed to `manual_review` rather than forced into KW.
+
+No prior research results were invalidated by this fix: the 20-item run
+that exposed it was itself explicitly infrastructure validation, run
+before baseline screening had produced any data used in, or intended for,
+the real pilot, source calibration, or C0-C4. Nothing needed to be rerun
+for research purposes — only the screening code needed correcting before
+the real pilot uses it.

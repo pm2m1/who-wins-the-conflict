@@ -106,12 +106,18 @@ schema).
 Groups are computed per model and never assumed to transfer. An item marked
 KC for one model may be KC, KW, excluded, or manual_review for another.
 
-- **KC** — baseline answer matches gold or a listed alias.
-- **KW** — baseline answer does not match gold, and is a clean factual
-  candidate (unambiguous, not malformed, not excessively long, not a list
-  of alternatives).
+- **KC** — the model gave an answer (not an abstention) that matches gold
+  or a listed alias.
+- **KW** — the model gave an answer (not an abstention) that does not
+  match gold, and is a clean factual candidate (unambiguous, not
+  malformed, not excessively long, not a list of alternatives). An
+  explicit abstention (e.g. "uncertain") is never a clean factual
+  candidate, even if it happens to coincide with the gold text or the
+  model inconsistently reports `Decision: answer` alongside it — KC and
+  KW both represent usable parametric answers, not abstentions.
 - **excluded / manual_review** — baseline answer is unsuitable for either
-  role (see `docs/methodology.md` for exact exclusion criteria).
+  role, including an explicit abstention (see `docs/methodology.md` for
+  exact exclusion criteria).
 
 ## Sampling across parametric strength
 
