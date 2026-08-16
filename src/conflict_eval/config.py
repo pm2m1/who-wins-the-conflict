@@ -40,6 +40,54 @@ class ModelSpec:
     requires_gated_access: bool
     dtype: str | None
     device_map: str | None
+    max_memory: dict[int | str, str] | None = None
+
+
+def _validate_max_memory(
+    value: Any, model_key: str, path: str | Path
+) -> dict[int | str, str] | None:
+    """Validate an optional per-model `max_memory` mapping, passed through
+    unchanged to `transformers.AutoModelForCausalLM.from_pretrained` for
+    Accelerate-style GPU/CPU memory-limited `device_map="auto"` loading
+    (docs/decisions.md, "Support reproducible model memory limits").
+
+    Memory limits must come from configuration, not a hidden
+    hardware-dependent heuristic — this function only validates shape; it
+    never invents or adjusts a value. Valid keys are non-negative integer
+    GPU ordinals or the literal string "cpu"; valid values are non-empty
+    strings in Accelerate's own memory-string format (e.g. "12.0GiB"),
+    which is preserved exactly, not reparsed or reformatted.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ConfigError(
+            f"{path}: model '{model_key}' max_memory must be a mapping, "
+            f"got {type(value).__name__}"
+        )
+
+    validated: dict[int | str, str] = {}
+    for key, val in value.items():
+        # bool is a subclass of int in Python; reject it explicitly rather
+        # than silently treating True/False as GPU ordinals 1/0.
+        if isinstance(key, bool) or not (isinstance(key, int) or key == "cpu"):
+            raise ConfigError(
+                f"{path}: model '{model_key}' max_memory key {key!r} must be a "
+                "non-negative integer GPU ordinal or the string 'cpu'"
+            )
+        if isinstance(key, int) and key < 0:
+            raise ConfigError(
+                f"{path}: model '{model_key}' max_memory GPU ordinal {key} "
+                "must be non-negative"
+            )
+        if not isinstance(val, str) or not val.strip():
+            raise ConfigError(
+                f"{path}: model '{model_key}' max_memory value for {key!r} must "
+                f"be a non-empty string, got {val!r}"
+            )
+        validated[key] = val
+
+    return validated
 
 
 @dataclasses.dataclass
@@ -76,6 +124,7 @@ def load_models_config(path: str | Path) -> ModelsConfig:
             requires_gated_access=bool(entry["requires_gated_access"]),
             dtype=entry.get("dtype"),
             device_map=entry.get("device_map"),
+            max_memory=_validate_max_memory(entry.get("max_memory"), key, path),
         )
     return ModelsConfig(models=models, generation=raw["generation"])
 

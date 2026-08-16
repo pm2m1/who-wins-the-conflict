@@ -9,6 +9,8 @@ dummy-adapter-only test suite.
 
 from __future__ import annotations
 
+from typing import Any
+
 from conflict_eval.models.base import BaseModelAdapter, GenerationConfig, Message
 from conflict_eval.scoring.sequence_logprob import (
     DetailedScore,
@@ -56,6 +58,7 @@ class HFCausalAdapter(BaseModelAdapter):
         revision: str | None = None,
         dtype: str | None = None,
         device_map: str | None = None,
+        max_memory: dict[int | str, str] | None = None,
         require_pinned_revision: bool = True,
     ) -> None:
         """`require_pinned_revision` defaults to True: if the exact commit
@@ -67,12 +70,24 @@ class HFCausalAdapter(BaseModelAdapter):
         — the resulting run cannot claim exact revision pinning, and
         `resolved_revision` will be `None` unless a post-load consistency
         check (below) is still able to recover a commit hash.
+
+        `max_memory` is passed through unchanged to
+        `AutoModelForCausalLM.from_pretrained` (Accelerate's
+        `device_map="auto"` memory-limited placement — e.g.
+        `{0: "12.0GiB", "cpu": "5GiB"}`) when configured; `None` (the
+        default) preserves prior behavior exactly, since the kwarg is
+        then simply not passed at all rather than passed as `None`
+        (docs/decisions.md, "Support reproducible model memory limits").
+        This does not change quantization, dtype, or introduce disk
+        offloading — those remain whatever `dtype`/`device_map` already
+        configure.
         """
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.model_id = hf_model_id
         self.requested_revision = revision
+        self.max_memory = max_memory
         self._torch = torch
 
         # Resolve BEFORE loading, so the revision determines what gets
@@ -98,13 +113,19 @@ class HFCausalAdapter(BaseModelAdapter):
         torch_dtype = getattr(torch, dtype) if dtype else None
         # Both calls use the SAME load_revision value, so the tokenizer
         # and model are guaranteed to come from the identical snapshot.
+        # max_memory is deliberately NOT passed to the tokenizer: it is a
+        # model-weight placement concern (device_map/max_memory govern
+        # where tensors live across GPU/CPU), not a vocabulary/text one.
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model_id, revision=load_revision)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            hf_model_id,
-            revision=load_revision,
-            torch_dtype=torch_dtype,
-            device_map=device_map,
-        )
+
+        model_kwargs: dict[str, Any] = {
+            "revision": load_revision,
+            "torch_dtype": torch_dtype,
+            "device_map": device_map,
+        }
+        if max_memory is not None:
+            model_kwargs["max_memory"] = max_memory
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model_id, **model_kwargs)
         self.model.eval()
 
         # Post-load CONSISTENCY CHECK only, not the selection mechanism:

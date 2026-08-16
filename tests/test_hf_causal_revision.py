@@ -224,3 +224,146 @@ def test_missing_post_load_commit_hash_does_not_raise():
     # treated as a mismatch — only an actual disagreement is an error.
     adapter = _build_adapter(resolved_sha="a1b2c3d4e5f6", post_load_commit_hash=None)
     assert adapter.model_revision == "a1b2c3d4e5f6"
+
+
+# --- max_memory propagation (docs/decisions.md, "Support reproducible
+# model memory limits") -------------------------------------------------
+
+
+def test_max_memory_none_omits_kwarg_from_model_from_pretrained():
+    captured_kwargs = {}
+
+    def _tracking_model(*args, **kwargs):
+        captured_kwargs.update(kwargs)
+        model = SimpleNamespace()
+        model.config = SimpleNamespace(_commit_hash="a1b2c3d4e5f6")
+        model.eval = lambda: model
+        return model
+
+    with (
+        patch("huggingface_hub.HfApi", return_value=_fake_hf_api("a1b2c3d4e5f6")),
+        patch("transformers.AutoTokenizer.from_pretrained", side_effect=_fake_tokenizer),
+        patch("transformers.AutoModelForCausalLM.from_pretrained", side_effect=_tracking_model),
+    ):
+        adapter = HFCausalAdapter(
+            "fake/model-id", revision=None, dtype=None, device_map="auto", max_memory=None
+        )
+
+    # Not just falsy — genuinely absent, preserving prior from_pretrained
+    # call shape exactly when no memory limit is configured.
+    assert "max_memory" not in captured_kwargs
+    assert adapter.max_memory is None
+
+
+def test_configured_max_memory_passed_unchanged_to_model_from_pretrained():
+    captured_kwargs = {}
+    configured = {0: "12.0GiB", "cpu": "5GiB"}
+
+    def _tracking_model(*args, **kwargs):
+        captured_kwargs.update(kwargs)
+        model = SimpleNamespace()
+        model.config = SimpleNamespace(_commit_hash="a1b2c3d4e5f6")
+        model.eval = lambda: model
+        return model
+
+    with (
+        patch("huggingface_hub.HfApi", return_value=_fake_hf_api("a1b2c3d4e5f6")),
+        patch("transformers.AutoTokenizer.from_pretrained", side_effect=_fake_tokenizer),
+        patch("transformers.AutoModelForCausalLM.from_pretrained", side_effect=_tracking_model),
+    ):
+        adapter = HFCausalAdapter(
+            "fake/model-id", revision=None, dtype=None, device_map="auto", max_memory=configured
+        )
+
+    assert captured_kwargs["max_memory"] is configured  # passed through unchanged, not reformatted
+    assert adapter.max_memory == configured
+
+
+def test_tokenizer_does_not_receive_max_memory():
+    captured_tokenizer_kwargs = {}
+
+    def _tracking_tokenizer(*args, **kwargs):
+        captured_tokenizer_kwargs.update(kwargs)
+        return SimpleNamespace(eos_token_id=0)
+
+    with (
+        patch("huggingface_hub.HfApi", return_value=_fake_hf_api("a1b2c3d4e5f6")),
+        patch("transformers.AutoTokenizer.from_pretrained", side_effect=_tracking_tokenizer),
+        patch(
+            "transformers.AutoModelForCausalLM.from_pretrained",
+            side_effect=_fake_model_with_commit_hash("a1b2c3d4e5f6"),
+        ),
+    ):
+        HFCausalAdapter(
+            "fake/model-id",
+            revision=None,
+            dtype=None,
+            device_map="auto",
+            max_memory={0: "12.0GiB"},
+        )
+
+    assert "max_memory" not in captured_tokenizer_kwargs
+
+
+def test_revision_resolution_still_precedes_construction_with_max_memory_configured():
+    call_order = []
+
+    def _tracking_hf_api(*args, **kwargs):
+        call_order.append("resolve")
+        return _fake_hf_api("a1b2c3d4e5f6")
+
+    def _tracking_tokenizer(*args, **kwargs):
+        call_order.append("tokenizer")
+        return SimpleNamespace(eos_token_id=0)
+
+    def _tracking_model(*args, **kwargs):
+        call_order.append("model")
+        model = SimpleNamespace()
+        model.config = SimpleNamespace(_commit_hash="a1b2c3d4e5f6")
+        model.eval = lambda: model
+        return model
+
+    with (
+        patch("huggingface_hub.HfApi", side_effect=_tracking_hf_api),
+        patch("transformers.AutoTokenizer.from_pretrained", side_effect=_tracking_tokenizer),
+        patch("transformers.AutoModelForCausalLM.from_pretrained", side_effect=_tracking_model),
+    ):
+        HFCausalAdapter(
+            "fake/model-id",
+            revision=None,
+            dtype=None,
+            device_map="auto",
+            max_memory={0: "12.0GiB", "cpu": "5GiB"},
+        )
+
+    assert call_order == ["resolve", "tokenizer", "model"]
+
+
+def test_tokenizer_and_model_receive_same_sha_with_max_memory_configured():
+    captured_revisions = {}
+
+    def _tracking_tokenizer(model_id, revision=None, **kwargs):
+        captured_revisions["tokenizer"] = revision
+        return SimpleNamespace(eos_token_id=0)
+
+    def _tracking_model(model_id, revision=None, **kwargs):
+        captured_revisions["model"] = revision
+        model = SimpleNamespace()
+        model.config = SimpleNamespace(_commit_hash="a1b2c3d4e5f6")
+        model.eval = lambda: model
+        return model
+
+    with (
+        patch("huggingface_hub.HfApi", return_value=_fake_hf_api("a1b2c3d4e5f6")),
+        patch("transformers.AutoTokenizer.from_pretrained", side_effect=_tracking_tokenizer),
+        patch("transformers.AutoModelForCausalLM.from_pretrained", side_effect=_tracking_model),
+    ):
+        HFCausalAdapter(
+            "fake/model-id",
+            revision=None,
+            dtype=None,
+            device_map="auto",
+            max_memory={0: "12.0GiB", "cpu": "5GiB"},
+        )
+
+    assert captured_revisions["tokenizer"] == captured_revisions["model"] == "a1b2c3d4e5f6"

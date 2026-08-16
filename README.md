@@ -73,12 +73,26 @@ Interpretation is restricted to genuine conflict trials — see
   infrastructure validation on Google Colab". This is infrastructure
   validation only — it is not a pilot run, an experiment result, or a
   research finding, and none of it used the intended research model.
-- Real 7B/8B research-model runs (baseline screening, source calibration,
-  the C0-C4 pilot itself, all with the actual intended models): **not yet
-  run**. `Qwen/Qwen2.5-7B-Instruct` remains the intended research model
-  and has not been run; `Llama-3.1-8B-Instruct` has not been run and
-  additionally requires gated Hugging Face access not yet provisioned.
-  Source calibration and C0-C4 have not been run. No pilot results or
+- Real `Qwen/Qwen2.5-7B-Instruct` feasibility validation: **completed**,
+  also on Google Colab (free NVIDIA Tesla T4), unquantized in float16
+  with `device_map="auto"` and an explicit memory cap
+  (`max_memory={0: "12.0GiB", "cpu": "5GiB"}`) to force GPU+CPU offload
+  (23 modules GPU / 9 CPU / 0 disk) — this is the actual intended
+  research model, run under an exactly resolved and pinned revision
+  (`a09a35458c702b33eeacc393d103063234e8bc28`). A real diagnostic
+  ("What is the capital of France?") completed successfully and the
+  strict Decision prompt/parser was re-confirmed against this same real
+  model. Full detail in `docs/decisions.md`, "Real Qwen2.5-7B-Instruct
+  feasibility validation on Google Colab". **This is infrastructure/
+  feasibility validation, not a pilot run and not a research finding.**
+  Qwen2.5-7B-Instruct has been run for this diagnostic purpose only —
+  it has **not** been run for PopQA research screening or the pilot.
+- Real 7B/8B research-model *screening/pilot* runs (baseline screening,
+  source calibration, the C0-C4 pilot itself, all with the actual
+  intended models producing research data): **not yet run**.
+  `Llama-3.1-8B-Instruct` has not been run at all yet, and additionally
+  requires gated Hugging Face access not yet provisioned. Source
+  calibration and C0-C4 have not been run. No pilot results or
   scientific conclusions exist yet.
 - **Pilot status: not yet run.**
 

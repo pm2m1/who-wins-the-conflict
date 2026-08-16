@@ -9,6 +9,15 @@
 # the exact resolved Hugging Face commit SHA it actually loaded (not just
 # this requested value) on every result record — see
 # docs/decisions.md, "Exact model revision recording".
+#
+# `max_memory` is an optional Accelerate-style per-device memory cap (e.g.
+# `{0: "12.0GiB", cpu: "5GiB"}`), used with `device_map: auto` to force
+# GPU+CPU offload placement on memory-constrained hardware (docs/decisions.md,
+# "Support reproducible model memory limits"). It is left `null` here
+# deliberately: machine-specific limits (e.g. a free Colab T4's ~12GiB)
+# are not universal research defaults and belong in a separate, ungitted
+# scratch config that overrides this file's values for a specific runtime
+# environment, not in the primary committed research configuration.
 
 models:
   llama:
@@ -18,6 +27,7 @@ models:
     requires_gated_access: true
     dtype: bfloat16
     device_map: auto
+    max_memory: null
 
   qwen:
     hf_model_id: Qwen/Qwen2.5-7B-Instruct
@@ -26,6 +36,7 @@ models:
     requires_gated_access: false
     dtype: bfloat16
     device_map: auto
+    max_memory: null
 
   dummy:
     hf_model_id: null
@@ -34,6 +45,7 @@ models:
     requires_gated_access: false
     dtype: null
     device_map: null
+    max_memory: null
 
 # Deterministic generation settings shared by all real-model runs.
 # do_sample=false is used directly (greedy decoding) rather than relying

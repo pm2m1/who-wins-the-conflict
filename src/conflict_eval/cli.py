@@ -78,7 +78,11 @@ def _build_model_adapter(spec: ModelSpec):
                 "than silently substituting a different model."
             )
         return HFCausalAdapter(
-            spec.hf_model_id, revision=spec.revision, dtype=spec.dtype, device_map=spec.device_map
+            spec.hf_model_id,
+            revision=spec.revision,
+            dtype=spec.dtype,
+            device_map=spec.device_map,
+            max_memory=spec.max_memory,
         )
     raise ConfigError(f"Unknown adapter type: {spec.adapter!r} for model spec {spec.key!r}")
 

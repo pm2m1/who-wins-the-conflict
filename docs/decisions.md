@@ -618,3 +618,68 @@ the earlier baseline-abstention fix (`72928b7fd624394526e7b4ba3c1cd22439d30f2a`)
 that fix ensures an *unambiguous* abstention cannot become KC/KW; this fix
 ensures the model cannot produce an *ambiguous* Decision value that the
 parser would have silently resolved one way or the other.
+
+## Real Qwen2.5-7B-Instruct feasibility validation on Google Colab
+
+This is a record of **real-model infrastructure/feasibility validation**,
+not a pilot result and not a scientific finding. The France diagnostic
+below is a sanity check on the scoring pipeline, not evidence bearing on
+RQ1/RQ2/RQ3.
+
+The actual intended research model, `Qwen/Qwen2.5-7B-Instruct`, was run
+**unquantized**, in float16, on a free Google Colab NVIDIA Tesla T4, using
+`device_map="auto"` with an explicit Accelerate memory cap
+(`max_memory={0: "12.0GiB", "cpu": "5GiB"}`) to force GPU+CPU offload —
+the free T4's ~15GB nominal VRAM is not reliably fully available in
+practice, so an unconstrained `device_map="auto"` load is not guaranteed
+to succeed. Exact revision resolution (`docs/decisions.md`, "Resolve,
+pin, load, record") succeeded before loading. Observed pinned SHA:
+`a09a35458c702b33eeacc393d103063234e8bc28`.
+
+**Observed placement:** 23 modules on GPU, 9 on CPU, 0 on disk.
+CPU-offloaded modules: `model.layers.22` through `model.layers.27`,
+`model.norm`, `model.rotary_emb`, `lm_head`.
+
+**Real diagnostic** ("What is the capital of France?"): generation
+succeeded —
+
+    Answer: Paris
+    Decision: answer
+    Confidence: 100
+
+— and teacher-forced scoring gave Paris a normalized log-probability of
+`-0.00019059749320149422` against London's `-21.82831573486328` (margin
+`+21.82812513737008`): generation time ~20.68s, each candidate score
+~1.03s/~1.05s, total ~22.75s. Post-inference: ~11.78GiB GPU used,
+~2.78GiB GPU free, ~3.69GiB CPU RAM available. This demonstrates the
+feasibility of small unquantized 7B runs on a free T4 through CPU
+offload — it does not, by itself, establish anything about the research
+questions.
+
+The strict Decision prompt/parser (`ffa67c517738b8ccb1521b9ae6fc39e3300f8e82`,
+"Decision output format made strict") was subsequently re-validated
+against this same real loaded Qwen2.5-7B-Instruct model, under the
+committed prompt: the generation above (`Decision: answer`, no pipe
+syntax) parses as `parsed.decision == "answer"`, `malformed == False`.
+
+**What this validates:** that the committed model-loading, revision-pinning,
+teacher-forced-scoring, and strict-parsing code paths work end to end
+against the real 7B research model on realistically constrained free-tier
+hardware. **What this does not validate:** no 7B PopQA baseline screening
+has been run, no source calibration has been run, no C0-C4 conditions have
+been run, and no scientific conclusion should be drawn from the France
+diagnostic or any other single-question sanity check above.
+
+**Reproducibility gap this closed:** the Colab session used a temporary,
+uncommitted, direct `transformers` load with `max_memory` hardcoded
+inline — the committed `HFCausalAdapter`/`ModelSpec`/CLI path had no way
+to express that placement. `ModelSpec` gained an optional `max_memory`
+field (validated, passed through unchanged — never reinterpreted — to
+`AutoModelForCausalLM.from_pretrained`), and `configs/models.yaml` keeps
+`max_memory: null` for both `llama` and `qwen`: the free T4's specific
+12GiB/5GiB split is a property of that runtime environment, not a
+research default, and belongs in a separate, machine-specific scratch
+config that overrides these values for an actual Colab run, not in the
+primary committed configuration. No result-record schema changed in this
+task; whether a run manifest should persist hardware placement metadata
+is left as a separate, later decision.
