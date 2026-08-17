@@ -38,6 +38,31 @@ implemented in `src/conflict_eval/data/popqa.py`):
 A fixed random seed (`configs/pilot.yaml: seed`) controls the initial
 candidate subsample (default: screen ~500-1000 candidates, configurable).
 
+`dataset.candidate_pool` selects the **screening frame** that this
+subsample is drawn from — an efficiency-oriented option for constructing
+causal conflict trials, not a redesign of the experiment
+(docs/decisions.md, "Support targeted primary conflict screening"):
+
+- `all` (default; every config predating this option behaves exactly as
+  before) — the frame is the full interim pool.
+- `primary_conflict_relations` — before sampling, the frame is restricted
+  to interim rows whose relation is in `PRIMARY_RELATIONS` and whose
+  `(relation, subject)` pair is subject-multiplicity-eligible, using the
+  same `data/conflict_eligibility.classify_primary_conflict_eligibility`
+  policy `cmd_screen` already applies per-model
+  (`src/conflict_eval/data/popqa.py:build_primary_relation_candidate_pool`).
+  Rows are then deterministically deduplicated by `(relation, subject)` —
+  when more than one eligible row shares a subject/relation, the row with
+  the lexicographically smallest string `id` is kept — before the same
+  seeded `screen_candidates`/`sample_candidates` sampling applies
+  unchanged. This is deliberately the same relation policy that already
+  determines `primary_conflict_eligible` at screening time, not a second,
+  parallel relation list, and it **predates** this screening option — see
+  `docs/decisions.md` for why it is not a post-hoc choice based on
+  favorable model outcomes. Because it changes the sampling frame, a
+  targeted-frame screen's relation distribution must not be interpreted
+  as a prevalence estimate over all of PopQA.
+
 ## 2. Model adapters
 
 `src/conflict_eval/models/base.py` defines `BaseModelAdapter` with:

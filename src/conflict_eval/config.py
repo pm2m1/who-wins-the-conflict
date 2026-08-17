@@ -159,6 +159,15 @@ class PilotConfig:
         return self.source_roles[model_key]
 
 
+# dataset.candidate_pool selects the screening scope (docs/decisions.md,
+# "Support targeted primary conflict screening"). "all" (the default, and
+# the only value historical configs implicitly used before this option
+# existed) preserves exact prior behavior; "primary_conflict_relations"
+# restricts the frame BEFORE deterministic candidate sampling to items
+# eligible under the already-committed PRIMARY relation policy.
+VALID_CANDIDATE_POOLS = frozenset({"all", "primary_conflict_relations"})
+
+
 def load_pilot_config(path: str | Path) -> PilotConfig:
     raw = _load_yaml(path)
     required_top = {
@@ -176,6 +185,17 @@ def load_pilot_config(path: str | Path) -> PilotConfig:
     if missing:
         raise ConfigError(f"{path}: missing top-level keys {missing}")
 
+    dataset = raw["dataset"]
+    # Default to "all" when omitted, so every config written before this
+    # option existed keeps its exact prior behavior with no edits needed.
+    candidate_pool = dataset.get("candidate_pool", "all")
+    if candidate_pool not in VALID_CANDIDATE_POOLS:
+        raise ConfigError(
+            f"{path}: dataset.candidate_pool must be one of "
+            f"{sorted(VALID_CANDIDATE_POOLS)}, got {candidate_pool!r}"
+        )
+    dataset["candidate_pool"] = candidate_pool
+
     source_roles = {
         key: SourceRoleConfig(
             preferred_source=entry.get("preferred_source"),
@@ -186,7 +206,7 @@ def load_pilot_config(path: str | Path) -> PilotConfig:
 
     return PilotConfig(
         seed=int(raw["seed"]),
-        dataset=raw["dataset"],
+        dataset=dataset,
         paths=raw["paths"],
         sampling=raw["sampling"],
         models=list(raw["models"]),

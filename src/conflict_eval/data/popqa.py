@@ -9,10 +9,15 @@ installed.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any
 
+from conflict_eval.data.conflict_eligibility import (
+    build_relation_subject_object_index,
+    classify_primary_conflict_eligibility,
+)
 from conflict_eval.data.normalize import normalize_answer
 from conflict_eval.data.sampling import sample_candidates
 
@@ -218,9 +223,72 @@ def build_interim(raw_items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
     return interim_items, exclusions
 
 
+@dataclasses.dataclass(frozen=True)
+class PrimaryRelationPool:
+    """Intermediate counts from `build_primary_relation_candidate_pool`,
+    kept distinct so callers (cli.py) can log each stage rather than only
+    the final count.
+    """
+
+    eligible_rows: list[dict[str, Any]]  # relation + subject-multiplicity eligible, before dedup
+    deduplicated_pool: list[dict[str, Any]]  # one row per (relation, subject), final output
+
+
+def build_primary_relation_candidate_pool(
+    interim_items: list[dict[str, Any]],
+) -> PrimaryRelationPool:
+    """Restrict the full interim PopQA pool to items eligible for PRIMARY
+    conflict trial construction, for use as the screening frame BEFORE
+    deterministic candidate sampling (docs/decisions.md, "Support
+    targeted primary conflict screening").
+
+    Uses the already-committed relation policy and subject-level
+    multiplicity check exactly as `cmd_screen` does for
+    `primary_conflict_eligible`
+    (`data/conflict_eligibility.classify_primary_conflict_eligibility`) —
+    this is not a second, parallel relation list. Applying it here, before
+    per-model baseline generation, only changes *which* items are
+    screened, not the eligibility rule itself.
+
+    Deterministically deduplicates by (relation, subject): when more than
+    one eligible interim row shares the same (relation, subject) pair,
+    the row with the lexicographically smallest string `id` is kept. The
+    result is independent of `interim_items`' input order — the
+    eligibility check depends only on the full pool's *content* (via
+    `build_relation_subject_object_index`), and the dedup choice and
+    final ordering are both determined by comparing/sorting item ids, not
+    by encounter order.
+    """
+    relation_subject_index = build_relation_subject_object_index(interim_items)
+
+    eligible_rows: list[dict[str, Any]] = []
+    best_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for item in interim_items:
+        eligibility = classify_primary_conflict_eligibility(
+            item.get("prop"), item.get("subj"), relation_subject_index
+        )
+        if not eligibility.eligible:
+            continue
+        eligible_rows.append(item)
+
+        key = (item["prop"], item["subj"])
+        current_best = best_by_key.get(key)
+        if current_best is None or str(item["id"]) < str(current_best["id"]):
+            best_by_key[key] = item
+
+    deduplicated_pool = sorted(best_by_key.values(), key=lambda item: str(item["id"]))
+    return PrimaryRelationPool(eligible_rows=eligible_rows, deduplicated_pool=deduplicated_pool)
+
+
 def screen_candidates(interim_items: list[dict[str, Any]], n: int, seed: int) -> list[dict[str, Any]]:
     """Deterministically subsample the interim pool for baseline
     screening (docs/methodology.md, section 1, step 3).
+
+    `interim_items` here is the SCREENING FRAME — the full interim pool
+    when `dataset.candidate_pool == "all"`, or the deduplicated primary
+    relation pool when `== "primary_conflict_relations"`
+    (cli.py:cmd_prepare_data selects which). This function's own sampling
+    semantics are unchanged either way.
     """
     return sample_candidates(interim_items, n, seed)
 

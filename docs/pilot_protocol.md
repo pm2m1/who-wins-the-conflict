@@ -12,6 +12,17 @@ has not yet been executed for a real model as of this writing — see
    Downloads `akariasai/PopQA` (test split) into `data/raw/`, runs
    deterministic normalization into `data/interim/`, and writes the
    screened candidate pool plus exclusion log into `data/processed/`.
+   `dataset.candidate_pool` in the config controls the screening frame
+   (docs/decisions.md, "Support targeted primary conflict screening"):
+   `all` (default) screens from the full interim pool, unchanged from
+   prior behavior; `primary_conflict_relations` restricts the frame,
+   before deterministic sampling, to items eligible under the
+   already-committed PRIMARY relation and subject-multiplicity policy —
+   an efficiency-oriented option for constructing causal conflict trials,
+   not a change to which relations are policy-eligible. A targeted-frame
+   screen is a different sampling frame from an unrestricted screen, so
+   its output must not be read as a prevalence estimate over all of
+   PopQA.
 
 2. **Baseline screening, model A.**
 

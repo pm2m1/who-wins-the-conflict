@@ -766,3 +766,79 @@ by the foil-sampling mechanism.
 This was discovered from a 20-item infrastructure smoke screen, before
 scaling to the 100/500-item screening pool and before source calibration
 or C0-C4, so no scientific result was invalidated.
+
+## Support targeted primary conflict screening (2026-08-17)
+
+After the real Qwen2.5-7B-Instruct validation gates passed, real-model
+PRIMARY-relation candidate screening at scale (the run leading into the
+500-candidate screen) required constructing the eligible, deduplicated
+PRIMARY-relation candidate frame independently on the GPU with an ad-hoc
+script, since the committed `prepare-data` pipeline only ever screened
+from the full interim pool. That is a reproducibility gap: the exact
+frame a real run screens from should be reconstructible from the
+committed CLI and config alone, not from an undocumented one-off script.
+
+**Fix:** `dataset.candidate_pool` in `configs/pilot.yaml`, validated in
+`config.load_pilot_config` (`ConfigError` on anything other than `all` or
+`primary_conflict_relations`; defaults to `all` when omitted, so every
+config written before this option existed keeps its exact prior
+behavior). `all` is unchanged: `cmd_prepare_data` screens from the full
+interim pool exactly as before. `primary_conflict_relations` calls the
+new `data/popqa.build_primary_relation_candidate_pool`, which:
+
+1. classifies every interim row via the already-committed
+   `data/conflict_eligibility.classify_primary_conflict_eligibility` —
+   the same relation policy (`PRIMARY_RELATIONS`) and subject-level
+   multiplicity check `cmd_screen` already uses for
+   `primary_conflict_eligible`, not a second, parallel relation list
+   (verified directly by a test that patches `PRIMARY_RELATIONS` and
+   confirms the pool construction responds to it);
+2. deterministically deduplicates the eligible rows by `(relation,
+   subject)`, keeping the row with the lexicographically smallest string
+   `id` when more than one eligible row shares a subject/relation pair
+   (e.g. two re-scraped rows recording the same fact);
+3. only *after* that frame is built does the existing seeded
+   `screen_candidates`/`sample_candidates` logic apply, unmodified.
+
+The eligibility check depends only on the full interim pool's content
+(via `build_relation_subject_object_index`), and the dedup choice and
+final ordering are both determined by comparing/sorting item ids — so the
+resulting frame, and therefore the candidate file built from it, is
+reproducible independent of interim row ordering. `cmd_prepare_data` logs
+each stage (`interim rows`, `eligible primary rows`,
+`unique primary relation/subject facts`, `screened candidates`) so a
+targeted run's provenance is visible without re-deriving it.
+
+**PRIMARY_RELATIONS predates this change.** The relation policy
+(`place of birth`, `sport`, `country`, `mother`) was committed in
+`d4e732a` ("Restrict primary trials to defensible conflicts"), motivated
+by a semantic review of the relation types plus a duplicate-rate census —
+*not* by which relations happened to give favorable outcomes with
+Qwen2.5-7B-Instruct. This screening option reuses that already-fixed
+policy verbatim; it does not introduce a new relation list, and it is not
+a post-hoc choice of relations based on real-model results.
+
+**What this is not:** a targeted-frame screen is an *efficiency*
+mechanism for constructing causal conflict trials — it changes which
+subset of PopQA is screened, not the eligibility rule, KC/KW semantics,
+foils, prompts, scoring, or generation settings. Because it changes the
+sampling frame, relation/answer statistics from a targeted-frame screen
+must not be interpreted as prevalence estimates over all of PopQA. Final
+candidate sampling within the (possibly restricted) frame remains
+deterministic and seed-pinned, exactly as before.
+
+**Screen summary wording.** The human-readable `screen` command summary
+previously printed `manual_review=N`, which could be misread as counting
+`knowledge_group == "manual_review"` specifically — but a KC/KW record
+can independently carry `manual_review = True` (e.g. flagged for
+conflict-eligibility review) while keeping its `knowledge_group`. The
+summary now prints `manual_review_flagged=N` instead. This is a wording
+change to the printed summary only; no record field, value, or semantics
+changed.
+
+No real model, PopQA download, or experiment was run to implement this
+option — the algorithm was validated with synthetic fixtures only (see
+`tests/test_primary_relation_pool.py`,
+`tests/test_prepare_data_candidate_pool.py`); the real 2,156 / 2,143 /
+2,136 counts and the reported candidate-file SHA256 were observed
+independently on the GPU and are not re-derived or re-verified here.

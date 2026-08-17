@@ -11,6 +11,17 @@ dataset:
   # docs asked for ~500-1000; kept configurable and modest by default so
   # a dry run / small real run stays cheap.
   screening_candidates: 500
+  # Screening frame that screening_candidates/seed subsample from
+  # (docs/decisions.md, "Support targeted primary conflict screening"):
+  #   all                          - the full interim PopQA pool (default;
+  #                                  matches all prior behavior exactly).
+  #   primary_conflict_relations   - restrict to items eligible under the
+  #                                  already-committed PRIMARY relation +
+  #                                  subject-multiplicity policy first.
+  # This changes the SAMPLING FRAME, not the eligibility rule itself, and
+  # results from the targeted frame must not be read as prevalence
+  # estimates over all of PopQA.
+  candidate_pool: all
 
 paths:
   raw_dir: data/raw

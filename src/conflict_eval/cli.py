@@ -30,6 +30,7 @@ from conflict_eval.data.foils import build_relation_index, sample_foil
 from conflict_eval.data.normalize import is_match, normalize_answer
 from conflict_eval.data.popqa import (
     build_interim,
+    build_primary_relation_candidate_pool,
     download_raw,
     load_raw_jsonl,
     screen_candidates,
@@ -109,11 +110,39 @@ def cmd_prepare_data(config_path: str) -> None:
     write_jsonl(interim_items, interim_dir / "popqa_interim.jsonl")
     write_jsonl(exclusions, interim_dir / "popqa_exclusions.jsonl")
 
+    # dataset.candidate_pool selects the SCREENING FRAME that
+    # screening_candidates/seed subsample from (docs/decisions.md,
+    # "Support targeted primary conflict screening"). "all" (default)
+    # preserves prior behavior exactly: the frame is the full interim
+    # pool. "primary_conflict_relations" restricts the frame first, using
+    # the already-committed PRIMARY relation + subject-multiplicity
+    # policy — this changes the SAMPLING FRAME, not the eligibility rule
+    # itself, and results from it must not be read as prevalence
+    # estimates over all of PopQA.
+    candidate_pool = config.dataset["candidate_pool"]
+    pool_result = None
+    if candidate_pool == "primary_conflict_relations":
+        pool_result = build_primary_relation_candidate_pool(interim_items)
+        screening_frame = pool_result.deduplicated_pool
+    else:
+        screening_frame = interim_items
+
     candidates = screen_candidates(
-        interim_items, config.dataset["screening_candidates"], config.seed
+        screening_frame, config.dataset["screening_candidates"], config.seed
     )
     processed_dir = Path(config.paths["processed_dir"])
     write_jsonl(candidates, processed_dir / "popqa_candidates.jsonl")
+
+    if pool_result is not None:
+        print(
+            f"candidate pool = {candidate_pool}\n"
+            f"  interim rows = {len(interim_items)}\n"
+            f"  eligible primary rows = {len(pool_result.eligible_rows)}\n"
+            f"  unique primary relation/subject facts = {len(pool_result.deduplicated_pool)}\n"
+            f"  screened candidates = {len(candidates)}"
+        )
+    else:
+        print(f"candidate pool = {candidate_pool}")
 
     print(
         f"prepare-data: {len(raw_items)} raw rows -> {len(interim_items)} interim "
@@ -289,10 +318,16 @@ def cmd_screen(model_key: str, config_path: str) -> None:
 
     n_kc = sum(1 for r in baseline_records if r.get("knowledge_group") == "KC")
     n_kw = sum(1 for r in baseline_records if r.get("knowledge_group") == "KW")
-    n_manual = sum(1 for r in baseline_records if r.get("manual_review"))
+    # Wording only, not a semantics change: a record can retain
+    # knowledge_group == "KC"/"KW" while manual_review == True (e.g. a
+    # conflict-eligibility review flag), so "manual_review=N" alone read
+    # as if it meant knowledge_group == "manual_review" specifically.
+    # "manual_review_flagged" makes clear this counts the boolean flag
+    # across all records, not a third knowledge group value.
+    n_manual_review_flagged = sum(1 for r in baseline_records if r.get("manual_review"))
     print(
         f"screen[{model_key}]: {len(baseline_records)} baseline records "
-        f"(KC={n_kc}, KW={n_kw}, manual_review={n_manual}), "
+        f"(KC={n_kc}, KW={n_kw}, manual_review_flagged={n_manual_review_flagged}), "
         f"{len(exclusions)} malformed exclusions."
     )
 
