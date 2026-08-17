@@ -906,3 +906,116 @@ were introduced.
 No real model, source calibration, or experiment was run to implement
 this fix — all tests use synthetic fixtures and fake model adapters
 (`tests/test_source_calibration.py`).
+
+## Freeze the first Qwen pilot after validated analysis (2026-08-17)
+
+The real `Qwen/Qwen2.5-7B-Instruct` baseline screen, source calibration,
+and C0-C4 pilot were run once, by the researcher, on their own hardware
+(NVIDIA RTX 3090), against repository commit
+`1483bf5f2444a7108307cf4368bb39311f0e0548` ("Make source calibration
+output strict"). This entry records that freeze and its provenance; the
+full results are in `docs/qwen_pilot_results.md`. This task did **not**
+rerun any of it — no model weights were loaded, no PopQA data was
+downloaded, and no pipeline command (`prepare-data`, `screen`,
+`calibrate-sources`, `build-pilot`, `run`, `analyze`) was executed as part
+of writing this documentation. Only the analysis-summary code and this
+documentation were changed.
+
+**Model/data revisions:** `Qwen/Qwen2.5-7B-Instruct`, resolved revision
+`a09a35458c702b33eeacc393d103063234e8bc28` (same revision validated
+earlier in "Real Qwen2.5-7B-Instruct feasibility validation on Google
+Colab", now used for the actual research run); PopQA resolved revision
+`098765c79ea10a2cb19c828324e33281b8336ec0` (same revision observed
+throughout this project). Environment: Python 3.10.13, PyTorch
+2.11.0+cu128 (CUDA 12.8), Transformers 5.13.1, Datasets 4.0.0, Accelerate
+1.14.0. Precision float16, no quantization. The `{0: "22GiB"}` scratch
+memory cap used for this run is documentation-only provenance, not a
+committed default — `configs/models.yaml` keeps `max_memory: null`,
+consistent with the same reasoning already recorded in "Real
+Qwen2.5-7B-Instruct feasibility validation on Google Colab".
+
+**Result and archive SHA256 hashes** are recorded in full in
+`docs/qwen_pilot_results.md`, "Frozen provenance" — not repeated here to
+avoid two sources of truth for the same hashes.
+
+**Reproducibility:** the C0 condition (no injected evidence) reproduced
+the corresponding baseline records exactly: 60/60 identical raw
+generation, parsed answer, decision, and confidence, 0 mismatches. This
+is treated as a major validation that the pilot run is internally
+consistent with the baseline screen it was sampled from.
+
+**No rerun after freeze.** Once the pilot results were validated (via the
+C0 reproducibility check and the direct SHA256 verification of every
+input/output artifact), the researcher froze the run: the pilot is not
+rerun to chase a cleaner result, and this documentation task changed
+neither the frozen JSONL results nor any experimental condition, source
+label, source role, item selection, or margin. The 60 selected items (30
+KC, 30 KW), the KC/KW membership, the margin bins, and the C0-C4
+condition definitions are exactly as originally run.
+
+**Primary outcomes are unchanged by this documentation task.** The
+primary committed-adoption results (HOR/COR, `docs/qwen_pilot_results.md`,
+"Primary descriptive results") are transcribed directly from the frozen
+analysis output; nothing here recomputes or restates them differently.
+
+**Paired source checks are secondary, not primary.** The KC (C3 vs. C4)
+and KW (C1 vs. C2) paired exact binomial checks were not preregistered in
+`docs/phase2_research_design.md` as primary hypothesis tests; they are
+documented and implemented (`analysis/paired_comparison.py`) as secondary
+inferential checks alongside the primary aggregate rates.
+
+**Country-only sensitivity is a planned check, not a post-hoc one.** Its
+provenance (SHA256 `3793c5a87051b695e9423e0cc087e608d1f002c900b95d5e42b56b4c74ec9c4b`)
+is a frozen pre-run manifest recorded before outcome analysis, so it is
+documented as "planned sensitivity," distinct from the genuinely post-hoc
+tentative-answer decomposition below.
+
+**Tentative-answer decomposition is post-hoc.** The parsed-Answer-field
+analysis of `Decision: uncertain` responses (`docs/qwen_pilot_results.md`,
+"Post-hoc exploratory tentative-answer decomposition") was conceived
+after inspecting the pilot's abstention behavior, not planned in advance.
+It is documented and labeled as post-hoc/exploratory throughout, and its
+one exact-p-value result (p=0.03125 for the KC tentative-content paired
+comparison) is not treated as a primary hypothesis test.
+
+**`final_accuracy` renamed to `parsed_answer_accuracy`.** The
+`condition_summary` aggregate in `analysis/summaries.py` previously
+exposed a column named `final_accuracy`, which reads as if it meant
+"accuracy of a committed final answer" but was in fact computed as the
+mean of `final_correct` — a purely textual match on the parsed `Answer:`
+field, true or false independent of `Decision`. Because the prompt format
+requires an `Answer:` field even under `Decision: uncertain`
+(`prompts/baseline.txt`), a record can have `final_correct == True` while
+`context_adopted == False` (the model never committed to that answer).
+The frozen pilot results made this ambiguity concrete enough to fix:
+`final_accuracy` is renamed to `parsed_answer_accuracy` (still `.mean()`
+of the same, unchanged `final_correct` field), with a docstring
+distinguishing it from `context_adoption_rate` (the primary committed
+outcome) and `abstention_rate`. This is a naming and documentation fix
+only — `final_correct` and `context_adopted` are unchanged, no frozen
+JSONL result was modified, and no other aggregate's computation changed.
+A regression test (`tests/test_analysis_summaries.py`) fixes the exact
+scenario that motivated the rename: a synthetic `Decision: uncertain`
+record whose parsed Answer matches gold must report
+`parsed_answer_accuracy = 1.0`, `abstention_rate = 1.0`, and
+`context_adoption_rate = 0.0` simultaneously.
+
+**H3 is not supported by this pilot.** The planned exploratory
+`Y ~ B * S + S * T + B * T` logistic regression's B:S term — the
+interaction most directly relevant to H3 (source moderates the
+parametric-margin effect) — has p=0.563. This is reported plainly, not
+downplayed; see `docs/qwen_pilot_results.md`, "Hypothesis status," for
+the full H1-H4 status language.
+
+**The dispreferred source is not called "uniquely least-preferred."**
+Direct source calibration (`preferred_source = "a government website"`,
+`dispreferred_source = "an anonymous online forum post"`) is a real,
+researcher-confirmed result, but the dispreferred label came from an
+empirically tied bottom tier among the six calibrated labels, not a
+clear single last place — so this documentation calls it "direct stated
+preference" throughout and does not claim uniqueness it cannot support.
+
+**No multi-model claim.** `Llama-3.1-8B-Instruct` has not been run.
+Nothing in `docs/qwen_pilot_results.md`, this entry, or the updated
+README claims a cross-model or general finding — all reported results are
+scoped to this one Qwen2.5-7B-Instruct pilot.

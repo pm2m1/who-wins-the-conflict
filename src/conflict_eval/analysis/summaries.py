@@ -22,6 +22,26 @@ def condition_summary(records: list[dict]) -> pd.DataFrame:
     """C0-C4 rates by model and knowledge group (Plot 3's underlying
     table). conflict_status is retained per row so agreement and conflict
     conditions stay visibly distinguished.
+
+    Three distinct rate columns are reported, and must not be conflated
+    (docs/methodology.md, "Metric semantics"; docs/decisions.md, "Freeze
+    the first Qwen pilot after validated analysis"):
+
+    - `context_adoption_rate` — the PRIMARY committed outcome:
+      `context_adopted` is only True when `Decision == "answer"` and the
+      parsed Answer matches the conflicting context answer
+      (evaluation/classify.py). This is what CAR/HOR/COR are built from.
+    - `parsed_answer_accuracy` — fraction whose parsed `Answer:` field
+      textually matches a gold answer/alias, *irrespective* of whether
+      `Decision` is `answer` or `uncertain`. The prompt format requires an
+      `Answer:` field even under `Decision: uncertain`
+      (prompts/baseline.txt), so this can be True on a trial where the
+      model did not commit to an answer at all — it is not a substitute
+      for context_adoption_rate and was previously mislabeled
+      `final_accuracy` in this table, which read as if it meant
+      "accuracy of a committed final answer."
+    - `abstention_rate` — fraction with `Decision == "uncertain"`,
+      exploratory only.
     """
     df = records_to_frame(records)
     grouped = (
@@ -29,7 +49,7 @@ def condition_summary(records: list[dict]) -> pd.DataFrame:
         .agg(
             n=("context_adopted", "size"),
             context_adoption_rate=("context_adopted", "mean"),
-            final_accuracy=("final_correct", "mean"),
+            parsed_answer_accuracy=("final_correct", "mean"),
             abstention_rate=("decision", lambda s: (s == "uncertain").mean()),
         )
         .reset_index()

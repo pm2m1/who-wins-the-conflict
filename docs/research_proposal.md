@@ -8,6 +8,10 @@ in LLM Evidence Use**
 Alternative title: *When Sources Override Memory: How Source Preference
 Mediates Context-Memory Conflict in LLMs*
 
+**Status:** the first pilot (`Qwen/Qwen2.5-7B-Instruct`) has been executed
+and frozen; see `docs/qwen_pilot_results.md` for results. This proposal is
+retained as originally written.
+
 ## Motivation
 
 Four strands of prior work, synthesized in

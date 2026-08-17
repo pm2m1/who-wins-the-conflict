@@ -5,6 +5,11 @@ genuine methodological problem, it is not silently changed here — see
 `docs/decisions.md` for the process (document the issue, implement the
 least invasive correction, record what changed and why).
 
+**Execution status note:** the first Qwen pilot has now been executed;
+results are documented in `docs/qwen_pilot_results.md`. The design below
+is retained as the pre-result specification and is not rewritten to fit
+what was observed.
+
 ## Research questions and hypotheses
 
 See `docs/research_proposal.md` for the motivating narrative. Restated

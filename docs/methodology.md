@@ -309,3 +309,48 @@ placeholder numbers cannot end up in a figure or summary table.
   generation config, prompt version, and the exact rendered prompt.
 - Raw PopQA data is not committed; `data/README.md` documents exact
   recreation steps and the dataset identifier/revision used.
+
+## 13. Metric semantics
+
+Executing the first real pilot (`docs/qwen_pilot_results.md`) surfaced an
+ambiguity worth documenting explicitly: `analysis/summaries.py`'s
+`condition_summary` reports three distinct rate columns per
+`(model_id, knowledge_group, condition, conflict_status)` group, and they
+must not be conflated:
+
+- **`context_adoption_rate`** — the mean of `context_adopted`, the
+  **primary** committed outcome (HOR/COR/CAR are all derived from it,
+  `evaluation/metrics.py`). `context_adopted` is only `True` if
+  `Decision == "answer"` **and** the parsed `Answer:` field matches the
+  conflicting context's asserted answer — an uncertain response can never
+  count toward this rate, however its `Answer:` field reads.
+- **`parsed_answer_accuracy`** — the mean of `final_correct`: whether the
+  parsed `Answer:` field textually matches a gold answer/alias, computed
+  independently of `Decision`. Because the prompt format
+  (`prompts/baseline.txt`) requires an `Answer:` field even under
+  `Decision: uncertain`, a record can have `final_correct == True` while
+  `context_adopted == False` — the model producing text that happens to
+  match gold is not the same as the model committing to that answer. This
+  column was previously named `final_accuracy`, which read as if it meant
+  "accuracy of a committed final answer"; it was renamed for exactly this
+  reason (`docs/decisions.md`, "Freeze the first Qwen pilot after
+  validated analysis"). The rename did not change what is computed —
+  still `.mean()` of the same, unchanged `final_correct` field.
+- **`abstention_rate`** — the mean of `decision == "uncertain"`.
+  Exploratory only (`docs/qwen_pilot_results.md`, "Primary descriptive
+  results" reports the overall conflict abstention rate as context, not
+  as a primary outcome).
+
+**Uncertain responses can still carry a parsed answer.** This is a
+property of the response format, not a bug: the model is instructed to
+always produce `Answer:`/`Decision:`/`Confidence:` fields, so an
+`Answer:` value exists even when `Decision: uncertain`. The pilot results
+document calls this value under abstention "tentative answer content" to
+avoid implying it is a committed final answer
+(`docs/qwen_pilot_results.md`, "Post-hoc exploratory tentative-answer
+decomposition") — that decomposition is a post-hoc, exploratory,
+mechanistic-diagnostic analysis, not part of this primary metric
+definition, and it is never merged into `context_adopted`.
+
+This section documents metric semantics as implemented; it does not
+change the original experimental design in `docs/phase2_research_design.md`.

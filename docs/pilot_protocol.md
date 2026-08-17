@@ -1,9 +1,17 @@
 # Pilot Protocol
 
 Step-by-step execution sequence for running the real pilot. Each step names
-the CLI command that performs it; see `README.md` for setup. This protocol
-has not yet been executed for a real model as of this writing — see
-`README.md` for current pilot status.
+the CLI command that performs it; see `README.md` for setup.
+
+**Execution status:** this protocol has now been executed once, in full,
+for `Qwen/Qwen2.5-7B-Instruct` (baseline screen, source calibration, and
+the C0-C4 pilot), and that run is frozen — results are in
+`docs/qwen_pilot_results.md`, and the freeze itself is recorded in
+`docs/decisions.md`, "Freeze the first Qwen pilot after validated
+analysis." It has not yet been executed for `Llama-3.1-8B-Instruct`. The
+step-by-step sequence below remains the protocol to follow for that (or
+any future) run; it is not rewritten to describe what happened, only what
+to do.
 
 1. **Prepare PopQA.**
 

@@ -117,8 +117,12 @@ def plot_corrective_vs_harmful(records: list[dict], out_path: str | Path) -> Pat
 
 
 def plot_condition_summary(records: list[dict], out_path: str | Path) -> Path:
-    """Plot 3: C0-C4 context-adoption/accuracy rates by model and
-    knowledge group, distinguishing agreement vs. conflict conditions.
+    """Plot 3: C0-C4 context-adoption rates (only — not
+    `parsed_answer_accuracy`) by model and knowledge group, distinguishing
+    agreement vs. conflict conditions. `condition_summary`
+    (analysis/summaries.py) also computes `parsed_answer_accuracy` and
+    `abstention_rate` per condition, but only `context_adoption_rate` is
+    plotted here; consult the underlying table directly for the other two.
     """
     _require(records, "Plot 3 (condition summary)")
     df = condition_summary(records)

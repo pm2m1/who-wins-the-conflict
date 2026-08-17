@@ -87,14 +87,23 @@ Interpretation is restricted to genuine conflict trials — see
   feasibility validation, not a pilot run and not a research finding.**
   Qwen2.5-7B-Instruct has been run for this diagnostic purpose only —
   it has **not** been run for PopQA research screening or the pilot.
-- Real 7B/8B research-model *screening/pilot* runs (baseline screening,
-  source calibration, the C0-C4 pilot itself, all with the actual
-  intended models producing research data): **not yet run**.
-  `Llama-3.1-8B-Instruct` has not been run at all yet, and additionally
-  requires gated Hugging Face access not yet provisioned. Source
-  calibration and C0-C4 have not been run. No pilot results or
-  scientific conclusions exist yet.
-- **Pilot status: not yet run.**
+- Real `Qwen/Qwen2.5-7B-Instruct` research-model run: **completed and
+  frozen.** Baseline screen (500 targeted candidates screened, 498
+  baseline records), source calibration (real, strict-format, 30
+  presentations), and the C0-C4 pilot itself (60 items x 5 conditions =
+  300 generations, 120 genuine conflict trials) have all been run once,
+  on the researcher's own RTX 3090, and the resulting analysis is frozen.
+  Full provenance, all primary/secondary/exploratory results, and
+  hypothesis status are in `docs/qwen_pilot_results.md`. See
+  `docs/decisions.md`, "Freeze the first Qwen pilot after validated
+  analysis."
+- `Llama-3.1-8B-Instruct` **has not been run** — it additionally requires
+  gated Hugging Face access not yet provisioned. No second-model
+  replication exists yet, so **no multi-model or general conclusion is
+  drawn anywhere in this repository.** `docs/qwen_pilot_results.md`
+  reports Qwen2.5-7B-Instruct pilot results only.
+- **Pilot status: Qwen2.5-7B-Instruct pilot completed and frozen; see
+  `docs/qwen_pilot_results.md`. Llama-3.1-8B-Instruct pilot not yet run.**
 
 ## Repository layout
 
@@ -207,10 +216,14 @@ one will be added once an actual workflow run has succeeded.
 
 ## Limitations
 
-This is a pilot (~60 items/model x 5 conditions x 2 models ≈ 600
-generations), not a publication-scale study. Evidence is prompt-injected
-and templated, not retrieved from real documents. Source preference is
-calibrated via direct pairwise elicitation only. Self-reported confidence
-is exploratory and not validated as calibrated. See
-`docs/research_proposal.md` ("Limitations") and `docs/decisions.md` for
-the full list of scope decisions and their rationale.
+This is a pilot (60 items x 5 conditions = 300 generations for the one
+model run so far), not a publication-scale study, and currently reflects
+**one model only** (`Qwen/Qwen2.5-7B-Instruct`) — `Llama-3.1-8B-Instruct`
+has not been run, so nothing here supports a multi-model or general
+conclusion. Evidence is prompt-injected and templated, not retrieved from
+real documents. Source preference is calibrated via direct pairwise
+elicitation only (never latent/behavioral preference). Self-reported
+confidence is exploratory and not validated as calibrated. See
+`docs/qwen_pilot_results.md` ("Limitations") for the full, pilot-specific
+list, `docs/research_proposal.md` ("Limitations") for the pre-result
+scope decisions, and `docs/decisions.md` for their rationale.
