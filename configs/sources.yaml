@@ -17,4 +17,10 @@ source_labels:
 
 # Prompt version used for calibration trials. Must match a version string
 # understood by prompts/source_calibration.txt.
-calibration_prompt_version: v1
+#
+# v2: the "Choice: 1 | 2" pipe-alternatives wording was replaced with an
+# unambiguous single-digit format after a real-model failure mode
+# (analogous to the baseline Decision-field fix) — see docs/decisions.md,
+# "Make source calibration output strict". v1 is retired, not reused, so
+# no calibration record can claim v1 semantics for the new prompt text.
+calibration_prompt_version: v2

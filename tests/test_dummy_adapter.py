@@ -52,7 +52,7 @@ def test_generate_answers_source_calibration_prompts_with_a_choice():
                 "For answering general factual questions, which of these two sources "
                 "would you prefer to rely on if both were available?\n\n"
                 "Source 1: Wikipedia\nSource 2: a personal blog\n\n"
-                "Respond using exactly this format:\n\nChoice: 1 | 2\n"
+                "Respond using exactly this format:\n\nChoice: <1 or 2>\n"
             ),
         }
     ]

@@ -15,7 +15,14 @@ import re
 from conflict_eval.models.base import BaseModelAdapter, GenerationConfig, Message
 from conflict_eval.source_preference.counterbalance import Presentation
 
-_CHOICE_RE = re.compile(r"Choice:\s*([12])")
+# Line-anchored and exact: the ENTIRE Choice line (surrounding whitespace
+# aside) must be exactly "1" or "2" — a prefix match here previously
+# accepted trailing junk such as "Choice: 1 | 2" or "Choice: 1 because...",
+# the same real-model failure mode already fixed for the baseline Decision
+# field (docs/decisions.md, "Make source calibration output strict"; see
+# also "Make decision output format strict"). MULTILINE so ^/$ anchor to
+# individual lines within the full response, not just the whole string.
+_CHOICE_RE = re.compile(r"^Choice:\s*([12])\s*$", re.MULTILINE)
 
 
 def render_calibration_prompt(template: str, presentation: Presentation) -> str:
@@ -47,6 +54,17 @@ def selected_source_from_choice(presentation: Presentation, choice: int | None) 
 class CalibrationTrial:
     run_id: str
     model_id: str
+    # Model provenance (docs/decisions.md, "Make source calibration
+    # output strict"): source preference is model-specific, so a real
+    # calibration record must identify the exact checkpoint used, not
+    # just the model family. model_revision mirrors the same field on
+    # baseline result records (docs/methodology.md) — the resolved commit
+    # SHA when available, else the requested revision string.
+    # requested_revision/resolved_revision are the adapter's own values
+    # (never hard-coded here); DummyModelAdapter reports both as None.
+    model_revision: str | None
+    requested_revision: str | None
+    resolved_revision: str | None
     seed: int
     source_a: str
     source_b: str
@@ -78,6 +96,9 @@ def run_calibration_trial(
     return CalibrationTrial(
         run_id=run_id,
         model_id=model.model_id,
+        model_revision=model.model_revision,
+        requested_revision=getattr(model, "requested_revision", None),
+        resolved_revision=getattr(model, "resolved_revision", None),
         seed=seed,
         source_a=presentation.source_a,
         source_b=presentation.source_b,

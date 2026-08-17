@@ -243,8 +243,15 @@ the relation/subject policy in step 5 above.
 2. `counterbalance.py` expands each pair into both presentation orders
    (`AB`, `BA`).
 3. `calibration.py` renders `prompts/source_calibration.txt` for each
-   presentation, calls the model, and parses a structured `Choice: 1|2`
-   response into a `selected_source`.
+   presentation, calls the model, and parses a structured `Choice: <1 or
+   2>` response into a `selected_source`. Parsing is line-anchored and
+   exact (`^Choice:\s*([12])\s*$`, multiline): a Choice line with any
+   trailing content — including the pipe-alternatives phrasing an earlier
+   prompt version used — is treated as malformed rather than accepted as
+   a prefix match (docs/decisions.md, "Make source calibration output
+   strict"). Each trial record also carries `model_revision`,
+   `requested_revision`, and `resolved_revision` from the adapter, since
+   source preference is model-specific.
 4. `ranking.py` aggregates trial-level records into pairwise
    `P(S_i preferred to S_j)` statistics and a preference matrix per model.
 

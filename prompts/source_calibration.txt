@@ -6,4 +6,8 @@ Source 2: {source_2}
 
 Respond using exactly this format:
 
-Choice: 1 | 2
+Choice: <1 or 2>
+
+For Choice, write exactly one digit: 1 or 2.
+Do not write both choices and do not use the | symbol.
+Do not provide an explanation.

@@ -842,3 +842,67 @@ option — the algorithm was validated with synthetic fixtures only (see
 `tests/test_prepare_data_candidate_pool.py`); the real 2,156 / 2,143 /
 2,136 counts and the reported candidate-file SHA256 were observed
 independently on the GPU and are not re-derived or re-verified here.
+
+## Make source calibration output strict
+
+Fixed before the first real Qwen2.5-7B-Instruct source-preference
+calibration was run, analogous to "Make decision output format strict"
+(`ffa67c5`) for the baseline `Answer`/`Decision`/`Confidence` format:
+that fix's real-model finding — a model can partially reproduce
+pipe-alternatives wording literally (`"Decision: answer | certain"`),
+and an unanchored prefix-matching parser silently accepts it — applies
+identically to the source-calibration `Choice` field, which used the
+same `"Choice: 1 | 2"` wording and the same
+`Choice:\s*([12])` unanchored regex. This was caught by inspection before
+any real calibration data existed, so **no source-preference result is
+invalidated**; there is nothing to invalidate.
+
+**Prompt** (`prompts/source_calibration.txt`): `"Choice: 1 | 2"` replaced
+with `"Choice: <1 or 2>"`, plus explicit instructions ("write exactly one
+digit... do not use the | symbol... do not provide an explanation"). The
+substantive source-preference question itself
+("For answering general factual questions, which of these two sources
+would you prefer to rely on...") is unchanged — this remains **direct
+stated preference**, not latent/behavioral preference (see
+`docs/reference_implementations.md` for that terminology distinction).
+
+**Parser** (`source_preference/calibration.py:parse_choice`): now
+`^Choice:\s*([12])\s*$` with `re.MULTILINE`, line-anchored and exact,
+mirroring the Decision-field fix exactly. `"Choice: 1 | 2"`,
+`"Choice: 1 because..."`, `"Choice: 12"`, `"Choice: 1/2"`, and a missing
+Choice line all now return `None` rather than a coerced guess — malformed
+choices continue to be excluded from pairwise statistics, not coerced,
+which was already the documented behavior for a `None` result.
+
+**Prompt version**: `configs/sources.yaml`'s `calibration_prompt_version`
+bumped from `v1` to `v2`. `v1` is retired, not reinterpreted — no trial
+can claim `v1` semantics for the new prompt text, and no `v1` calibration
+data exists to reinterpret.
+
+**Model provenance**: `CalibrationTrial` gained `model_revision`,
+`requested_revision`, and `resolved_revision`, populated from the
+adapter's own attributes (never a hard-coded SHA) — the same convention
+already used for baseline result records
+(`docs/decisions.md`, "Exact model revision recording"). Source
+preference is model-specific, so a calibration record that only names
+the model family (`model_id`) without the exact checkpoint is not fully
+reproducible. The calibration summary JSON gains the same three fields
+at the top level. This is purely additive: `PairwiseStat`,
+`compute_pairwise_stats`, `build_preference_matrix`, and
+`rank_sources_pilot_heuristic` are all unchanged, since they only read
+`source_a`/`source_b`/`selected_source` from trial records — no pairwise
+preference statistic is affected by this addition.
+
+**What did not change**: the six labels in `configs/sources.yaml`, pair
+enumeration (all 15 unordered pairs from 6 labels), AB/BA counterbalancing
+(30 total presentations), the direct-stated-preference framing,
+`rank_sources_pilot_heuristic`'s status as an explicitly-labeled pilot
+heuristic (not a statistical threshold), and the requirement that a
+researcher — not the pipeline — sets `preferred_source`/
+`dispreferred_source` in `configs/pilot.yaml` after inspecting real
+calibration output. No repetitions, thresholds, or new ranking method
+were introduced.
+
+No real model, source calibration, or experiment was run to implement
+this fix — all tests use synthetic fixtures and fake model adapters
+(`tests/test_source_calibration.py`).

@@ -439,6 +439,9 @@ def cmd_calibrate_sources(model_key: str, config_path: str) -> None:
 
     summary = {
         "model_id": model.model_id,
+        "model_revision": model.model_revision,
+        "requested_revision": getattr(model, "requested_revision", None),
+        "resolved_revision": getattr(model, "resolved_revision", None),
         "pairwise_stats": [dataclasses_asdict(s) for s in stats],
         "preference_matrix": matrix,
         "pilot_heuristic_ranking": ranking,
