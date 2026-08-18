@@ -102,8 +102,15 @@ Interpretation is restricted to genuine conflict trials — see
   replication exists yet, so **no multi-model or general conclusion is
   drawn anywhere in this repository.** `docs/qwen_pilot_results.md`
   reports Qwen2.5-7B-Instruct pilot results only.
+- `Llama-3.1-8B-Instruct` replication: **protocol and configuration
+  prepared, not executed.** See `docs/llama_replication_protocol.md` and
+  `configs/replication/`. No Llama scientific result of any kind exists
+  yet — do not read the presence of this preparation as a validated or
+  replicated result.
 - **Pilot status: Qwen2.5-7B-Instruct pilot completed and frozen; see
-  `docs/qwen_pilot_results.md`. Llama-3.1-8B-Instruct pilot not yet run.**
+  `docs/qwen_pilot_results.md`. Llama-3.1-8B-Instruct pilot not yet run;
+  its replication protocol/configuration are prepared in
+  `docs/llama_replication_protocol.md`.**
 
 ## Repository layout
 

@@ -101,7 +101,10 @@ def cmd_prepare_data(config_path: str) -> None:
     config = load_pilot_config(config_path)
 
     raw_path = download_raw(
-        config.dataset["hf_dataset_id"], config.dataset["split"], config.paths["raw_dir"]
+        config.dataset["hf_dataset_id"],
+        config.dataset["split"],
+        config.paths["raw_dir"],
+        revision=config.dataset["revision"],
     )
     raw_items = load_raw_jsonl(raw_path)
     interim_items, exclusions = build_interim(raw_items)

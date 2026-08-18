@@ -1019,3 +1019,104 @@ preference" throughout and does not claim uniqueness it cannot support.
 Nothing in `docs/qwen_pilot_results.md`, this entry, or the updated
 README claims a cross-model or general finding — all reported results are
 scoped to this one Qwen2.5-7B-Instruct pilot.
+
+## Precommit the Llama second-model replication (2026-08-18)
+
+This entry records preparation for a second-model replication of the
+frozen Qwen2.5-7B-Instruct pilot, using `meta-llama/Llama-3.1-8B-
+Instruct`. It is preparation only: **no Llama scientific result exists
+at the time of this entry.** The frozen Qwen pilot
+(`docs/qwen_pilot_results.md`, and the "Freeze the first Qwen pilot after
+validated analysis" entry above) is unmodified by this work —
+`git diff -- docs/qwen_pilot_results.md` is empty for this change.
+
+**What was precommitted, and why it matches the Qwen method.** The
+replication follows the same controlled method as the frozen Qwen pilot,
+not a copy of its realized sample: the same exact PopQA snapshot
+(`akariasai/PopQA`, split `test`, revision
+`098765c79ea10a2cb19c828324e33281b8336ec0`), the same seed (`42`), the
+same 500-candidate targeted screening frame
+(`candidate_pool: primary_conflict_relations`), the same already-committed
+PRIMARY relation policy, the same 30 KC / 30 KW target balanced across
+`low`/`medium`/`high` margin bins, the same C0-C4 condition definitions,
+the same source-candidate label set and `calibration_prompt_version: v2`,
+and the same planned `B*S + S*T + B*T` regression form. These live in
+the new `configs/replication/llama_pilot.yaml` and
+`configs/replication/models_llama.yaml`, and in
+`docs/llama_replication_protocol.md`.
+
+**What was deliberately left unset.** Llama's `source_roles` in
+`configs/replication/llama_pilot.yaml` are both `null`. Qwen's measured
+pair (`preferred_source = "a government website"`,
+`dispreferred_source = "an anonymous online forum post"`) is a Qwen-
+specific empirical result and is not copied into the Llama config —
+Llama must be calibrated independently
+(`docs/llama_replication_protocol.md`, "Phase F"). Similarly, Qwen's
+final selected 60-item sample is not copied into Llama's config or
+sampling code; natural overlap from drawing on the same 500-candidate
+frame is expected and allowed, but intentional copying is not. The exact
+Llama Hugging Face model revision is also left unset
+(`configs/replication/models_llama.yaml`, `revision: null`) rather than
+guessed, because the model has not been accessed for this run — see
+"Exact revision lock" in `docs/llama_replication_protocol.md`.
+
+**Precision choice.** `configs/replication/models_llama.yaml` commits
+`dtype: float16` (no quantization, `device_map: auto`, `max_memory:
+null`) to match the frozen Qwen pilot's real-run precision for
+comparability. This is an infrastructure choice, not a changed
+scientific hypothesis, and does not affect
+`configs/models.yaml`'s existing `bfloat16` default, which this change
+does not touch.
+
+**Generic `dataset.revision` config addition.** `cmd_prepare_data`
+previously called `download_raw(...)` without propagating a revision
+from the pilot YAML, even though `download_raw` already accepted and
+correctly used a `revision` parameter (resolve -> pin -> load -> record).
+This was a real gap for reproducibly forcing a second model onto the
+exact same immutable PopQA snapshot as the first. The fix is generic, not
+Llama-specific: `load_pilot_config` (`src/conflict_eval/config.py`) now
+reads an optional `dataset.revision` string. If omitted, it defaults to
+`"main"`, so every config written before this option existed keeps its
+exact prior behavior with no edits required — `configs/pilot.yaml`
+(the Qwen config) is unchanged and still resolves to `"main"`. If
+provided, the value is validated only for shape (must be a non-empty
+string) and passed through to `download_raw` unchanged — no SHA is
+reformatted, inferred, or silently substituted, and there is no fallback
+from a requested SHA to `main`. `cmd_prepare_data` (`src/conflict_eval/
+cli.py`) now passes `config.dataset["revision"]` through to
+`download_raw`. `configs/replication/llama_pilot.yaml` uses this option
+to pin the same PopQA revision the Qwen pilot used. Tests are in
+`tests/test_dataset_revision_config.py`. This is a reproducibility
+improvement, not a change to the frozen Qwen experiment: no config that
+was used for the actual Qwen run's data preparation had `dataset.revision`
+set, so its behavior is unchanged.
+
+**Stop rules precommitted before any Llama outcome exists.** If the
+500-candidate frame cannot support a valid 30 KC + 30 KW pilot under the
+existing eligibility rules, execution stops rather than automatically
+loosening eligibility or otherwise adapting — the researcher must make
+and record a new pre-outcome expansion decision. Malformed and
+manual-review baseline/calibration cases must be inspected, not silently
+folded into KC/KW. Full detail in
+`docs/llama_replication_protocol.md`, "Insufficient-sample rule" and
+"Malformed / manual-review rule" (protocol phases H and E).
+
+**Country-only sensitivity is precommitted**, the same planned-not-post-
+hoc status it has for Qwen (`docs/qwen_pilot_results.md`, "Planned
+country-only sensitivity").
+
+**Tentative-answer decomposition reclassified for Llama only.** Qwen's
+tentative-answer decomposition was post-hoc for Qwen. Because that
+phenomenon is now known in advance for Llama, running the same
+decomposition on Llama is classified in
+`docs/llama_replication_protocol.md` as a **pre-specified secondary
+mechanistic follow-up motivated by the prior Qwen pilot** — explicitly
+not an original primary hypothesis and not an independent discovery. It
+is precommitted here, before any Llama result exists, precisely so it
+cannot later be described as post-hoc for Llama.
+
+**No Llama scientific result exists at the time of this entry.** No
+model weights were loaded, no PopQA download occurred, no baseline
+screen ran, no source calibration ran, no pilot was built, no C0-C4
+generation ran, and no scientific analysis ran, for either Qwen or Llama,
+as part of this preparation work.

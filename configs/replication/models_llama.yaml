@@ -1,0 +1,44 @@
+# Model template for the Llama-3.1-8B-Instruct replication.
+#
+# STATUS: precommitted, PRE-RUN template. `revision: null` is deliberate
+# — see docs/llama_replication_protocol.md, "Exact revision lock". The
+# exact immutable Hugging Face commit SHA is not known yet because the
+# model has not been accessed for this run, and this file must not
+# commit a guessed SHA. Before any substantive baseline screen, a future
+# researcher must: obtain legitimate gated-model access, authenticate
+# privately (no token committed here or anywhere in this repo), resolve
+# the exact SHA via `conflict_eval.models.hf_causal.resolve_model_revision`
+# (metadata-only lookup, no weight download), copy this file to an
+# ungitted scratch runtime config, and replace `revision: null` with the
+# resolved SHA there.
+#
+# dtype: float16 is an infrastructure/comparability choice, not a
+# changed scientific hypothesis — it matches the frozen Qwen pilot's real
+# run precision (docs/qwen_pilot_results.md, "Frozen provenance": Qwen
+# was run in float16, no quantization) so the two models are compared
+# under the same numeric-precision conditions. This is unrelated to
+# configs/models.yaml's committed `bfloat16` default for other purposes;
+# do not conflate the two files.
+#
+# max_memory stays null here: any machine-specific cap (e.g. a specific
+# RTX 3090 host's scratch memory limit) belongs only in an ungitted
+# scratch runtime config, never in this committed template
+# (docs/decisions.md, "Support reproducible model memory limits").
+
+models:
+  llama:
+    hf_model_id: meta-llama/Llama-3.1-8B-Instruct
+    revision: null
+    adapter: hf_causal
+    requires_gated_access: true
+    dtype: float16
+    device_map: auto
+    max_memory: null
+
+# Deterministic generation settings, identical to the project's existing
+# real-model runs (configs/models.yaml) — not changed for this
+# replication.
+generation:
+  do_sample: false
+  max_new_tokens: 32
+  num_beams: 1

@@ -59,3 +59,19 @@ def test_existing_ignore_rules_still_present():
     assert _is_ignored("__pycache__/mod.pyc")
     assert _is_ignored(".pytest_cache/README.md")
     assert _is_ignored(".ruff_cache/whatever")
+
+
+def test_replication_run_outputs_are_ignored():
+    # runs/ holds regenerated per-replication artifacts (datasets, model
+    # outputs, baseline/calibration/pilot results, manifests) for e.g. the
+    # Llama replication and must never be committed (docs/decisions.md,
+    # "Precommit the Llama second-model replication").
+    assert _is_ignored("runs/llama/results/whatever.jsonl")
+    assert _is_ignored("runs/llama/data/raw/popqa_raw.jsonl")
+
+
+def test_replication_configs_are_not_ignored():
+    # The precommitted replication specification itself must stay
+    # trackable even though it lives alongside the ignored runs/ tree.
+    assert not _is_ignored("configs/replication/llama_pilot.yaml")
+    assert not _is_ignored("configs/replication/models_llama.yaml")

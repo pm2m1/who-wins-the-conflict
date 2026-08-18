@@ -63,6 +63,24 @@ causal conflict trials, not a redesign of the experiment
   targeted-frame screen's relation distribution must not be interpreted
   as a prevalence estimate over all of PopQA.
 
+`dataset.revision` optionally pins the exact immutable Hugging Face
+commit SHA that `prepare-data` loads (docs/decisions.md, "Precommit the
+Llama second-model replication", which also explains the reproducibility
+gap this closes). If omitted, it defaults to `"main"`,
+preserving the exact behavior of every config written before this option
+existed — `configs/pilot.yaml` (the config used for the Qwen pilot's
+data preparation) does not set it and still resolves to `"main"`. If
+provided, the value must be a non-empty string and is passed through to
+`download_raw` unchanged: it is never reformatted, inferred, or silently
+substituted, and there is no fallback from a requested SHA to `main` if
+that SHA fails to resolve — `download_raw`'s own resolve -> pin -> load
+-> record behavior (see "Dataset and preprocessing" above) remains
+authoritative and raises rather than proceeding on an unresolved
+revision. This option exists so a second model can be forced onto
+exactly the same PopQA snapshot as a prior run — see
+`configs/replication/llama_pilot.yaml`, which pins the same revision the
+frozen Qwen pilot used.
+
 ## 2. Model adapters
 
 `src/conflict_eval/models/base.py` defines `BaseModelAdapter` with:

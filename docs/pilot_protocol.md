@@ -8,10 +8,17 @@ for `Qwen/Qwen2.5-7B-Instruct` (baseline screen, source calibration, and
 the C0-C4 pilot), and that run is frozen — results are in
 `docs/qwen_pilot_results.md`, and the freeze itself is recorded in
 `docs/decisions.md`, "Freeze the first Qwen pilot after validated
-analysis." It has not yet been executed for `Llama-3.1-8B-Instruct`. The
-step-by-step sequence below remains the protocol to follow for that (or
-any future) run; it is not rewritten to describe what happened, only what
-to do.
+analysis." It has not yet been executed for `Llama-3.1-8B-Instruct`: a
+replication has been *prepared* (precommitted configuration under
+`configs/replication/`, and a dedicated phase-by-phase protocol in
+`docs/llama_replication_protocol.md` that this generic protocol's steps
+still underlie), but no Llama scientific result exists yet. This generic,
+model-agnostic step-by-step sequence below remains the protocol to
+follow for any real run, including the eventual Llama one; it is not
+rewritten to describe what happened, only what to do, and
+`docs/llama_replication_protocol.md` does not replace it — it adds
+replication-specific detail (stop rules, precommitted invariants,
+cross-model questions) on top of these same steps.
 
 1. **Prepare PopQA.**
 

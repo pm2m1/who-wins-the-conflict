@@ -196,6 +196,24 @@ def load_pilot_config(path: str | Path) -> PilotConfig:
         )
     dataset["candidate_pool"] = candidate_pool
 
+    # dataset.revision optionally pins the exact immutable PopQA snapshot
+    # used by `prepare-data` (docs/decisions.md, "Precommit the Llama
+    # second-model replication"). Omitted preserves the historical default of
+    # "main" — every config written before this option existed keeps its
+    # exact prior behavior with no edits needed. When provided, the value
+    # is validated only for shape (a non-empty string) and passed through
+    # to `download_raw` unchanged: this function does not resolve, guess,
+    # reformat, or fall back from a requested SHA to "main" — that
+    # resolve -> pin -> load -> record behavior belongs to
+    # `download_raw`/`resolve_dataset_revision` alone.
+    revision = dataset.get("revision")
+    if revision is not None and (not isinstance(revision, str) or not revision.strip()):
+        raise ConfigError(
+            f"{path}: dataset.revision must be a non-empty string if provided, "
+            f"got {revision!r}"
+        )
+    dataset["revision"] = revision if revision is not None else "main"
+
     source_roles = {
         key: SourceRoleConfig(
             preferred_source=entry.get("preferred_source"),
