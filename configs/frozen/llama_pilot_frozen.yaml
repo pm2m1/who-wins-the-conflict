@@ -1,0 +1,56 @@
+# POST-RUN PROVENANCE COPY.
+# This file was created after the experiment for reproducibility.
+# It is NOT a preregistration and does not replace the historical
+# pre-run configuration (configs/replication/llama_pilot.yaml).
+#
+# Records the exact pilot-level configuration values that produced the
+# completed Llama replication reported in docs/cross_model_pilot_results.md.
+# configs/replication/llama_pilot.yaml remains the historical pre-run
+# template with source_roles left null; this file is the same method with
+# the researcher's post-calibration source-role decision filled in. The
+# repository commit the run was actually executed from is recorded in
+# docs/cross_model_pilot_results.md, "Frozen provenance":
+# `4f57525d19f60fe0431ced3a19bf38f83dd3a545`.
+
+seed: 42
+
+dataset:
+  hf_dataset_id: akariasai/PopQA
+  split: test
+  # Same exact PopQA snapshot used for the Qwen run, pinned via
+  # dataset.revision so both models sample from the same underlying data
+  # (docs/cross_model_pilot_results.md, "Frozen provenance").
+  revision: 098765c79ea10a2cb19c828324e33281b8336ec0
+  screening_candidates: 500
+  candidate_pool: primary_conflict_relations
+
+paths:
+  raw_dir: runs/llama/data/raw
+  interim_dir: runs/llama/data/interim
+  processed_dir: runs/llama/data/processed
+  results_dir: runs/llama/results
+  figures_dir: runs/llama/figures
+
+sampling:
+  target_kc_items: 30
+  target_kw_items: 30
+  margin_bins: [low, medium, high]
+
+models:
+  - llama
+
+# Researcher-confirmed source roles after Llama's own independent
+# calibration (docs/cross_model_pilot_results.md, "What is comparable, and
+# what is not"). The preferred-source label matches Qwen's
+# ("a government website"); the dispreferred label does not
+# ("a social media post" for Llama vs. "an anonymous online forum post"
+# for Qwen) — this was an independent per-model calibration outcome, not
+# a copied assignment.
+source_roles:
+  llama:
+    preferred_source: a government website
+    dispreferred_source: a social media post
+
+prompts_config: configs/prompts.yaml
+sources_config: configs/sources.yaml
+models_config: configs/frozen/llama_model_frozen.yaml

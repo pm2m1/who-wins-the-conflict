@@ -17,5 +17,18 @@ Four figures are produced, matching `docs/phase2_research_design.md`:
 
 ## Status
 
-As of this writing, no real pilot has been run, so this directory contains
-no figures yet.
+The four figures above were generated from real pilot outputs during the
+completed Qwen and Llama analysis runs. The generated PNGs are
+intentionally gitignored (see `.gitignore`) — reproducible from `results/`
+plus `analyze` — so this local checkout's `figures/` directory contains no
+image files, only this README. That is expected, not a sign that no
+experiment was run; the numeric results those figures visualize are
+frozen in `docs/qwen_pilot_results.md` and
+`docs/cross_model_pilot_results.md`.
+
+A small curated subset of restrained, publication-style figures generated
+directly from those frozen aggregate numbers (not from raw per-item data,
+which is not committed) is checked in under `docs/assets/` for readers who
+want a visual without re-running the pipeline; see
+`scripts/plot_cross_model_summary.py` for their generation script and
+provenance.

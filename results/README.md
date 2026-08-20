@@ -11,8 +11,19 @@ reproducible from the pipeline plus a fixed seed, and because a real
 
 ## Status
 
-As of this writing, no real pilot has been run in this environment. There
-are no result files here yet. Dry-run output (from the `DummyModelAdapter`)
-must never be treated as real results — it is written, if at all, to a
-path clearly marked `dryrun` or `synthetic`, and it is not read by
-`analyze` as pilot input.
+Real Qwen and Llama pilot runs were completed on the researcher's own GPU
+host (screening, source calibration, and the C0-C4 pilot for each model).
+The generated JSONL/CSV/JSON runtime files those runs produced are
+intentionally gitignored — reproducible from the pipeline plus a fixed
+seed, and large relative to this repository — so this local checkout's
+`results/` directory contains no result files, only this README. That is
+expected, not a sign that no experiment was run.
+
+The frozen scientific results live in:
+
+- `docs/qwen_pilot_results.md` — the first-model Qwen pilot;
+- `docs/cross_model_pilot_results.md` — the completed two-model synthesis.
+
+Dry-run output (from the `DummyModelAdapter`) must never be treated as
+real results — it is written, if at all, to a path clearly marked
+`dryrun` or `synthetic`, and it is not read by `analyze` as pilot input.

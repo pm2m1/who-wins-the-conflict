@@ -1,0 +1,39 @@
+# POST-RUN PROVENANCE COPY.
+# This file was created after the experiment for reproducibility.
+# It is NOT a preregistration and does not replace the historical
+# pre-run configuration (configs/models.yaml).
+#
+# Records the exact Qwen/Qwen2.5-7B-Instruct model configuration actually
+# used for the frozen pilot run, as reported in docs/qwen_pilot_results.md,
+# "Frozen provenance". configs/models.yaml's `dtype: bfloat16` is the
+# repository's general committed default for future runs; it is NOT what
+# the real Qwen run used, which was float16 — the two files intentionally
+# differ and neither is edited to match the other.
+
+models:
+  qwen:
+    hf_model_id: Qwen/Qwen2.5-7B-Instruct
+    # Exact resolved Hugging Face commit SHA loaded for the frozen run
+    # (docs/qwen_pilot_results.md, "Frozen provenance").
+    revision: a09a35458c702b33eeacc393d103063234e8bc28
+    adapter: hf_causal
+    requires_gated_access: false
+    dtype: float16
+    device_map: auto
+    # Machine-specific scratch memory cap actually used for this one run,
+    # on a 24GB RTX 3090, to force the same GPU+CPU offload placement that
+    # produced the frozen results (docs/qwen_pilot_results.md, "Frozen
+    # provenance": "{0: '22GiB'}"). This is recorded here because the
+    # frozen documentation records it, not because it is a portable
+    # default — a different host would need its own value, which is why
+    # configs/models.yaml deliberately keeps max_memory: null.
+    max_memory:
+      0: "22GiB"
+
+# Deterministic generation settings used for the frozen run — identical to
+# configs/models.yaml's committed defaults; not changed for this
+# provenance copy.
+generation:
+  do_sample: false
+  max_new_tokens: 32
+  num_beams: 1

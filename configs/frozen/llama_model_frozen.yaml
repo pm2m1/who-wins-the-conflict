@@ -1,0 +1,36 @@
+# POST-RUN PROVENANCE COPY.
+# This file was created after the experiment for reproducibility.
+# It is NOT a preregistration and does not replace the historical
+# pre-run configuration (configs/replication/models_llama.yaml).
+#
+# Records the exact Llama-3.1-8B-Instruct model configuration actually
+# used for the completed replication run, as reported in
+# docs/cross_model_pilot_results.md, "Frozen provenance". Unlike
+# configs/replication/models_llama.yaml (which deliberately committed
+# `revision: null` before the model had been accessed), this file records
+# the real resolved revision now that the run has happened.
+
+models:
+  llama:
+    hf_model_id: meta-llama/Llama-3.1-8B-Instruct
+    # Exact resolved Hugging Face commit SHA loaded for the completed run
+    # (docs/cross_model_pilot_results.md, "Frozen provenance").
+    revision: 0e9e39f249a16976918f6564b8830bc894c89659
+    adapter: hf_causal
+    requires_gated_access: true
+    dtype: float16
+    device_map: auto
+    # No machine-specific memory cap is recorded for the Llama run in
+    # docs/cross_model_pilot_results.md (unlike Qwen's documented
+    # "{0: '22GiB'}" cap in docs/qwen_pilot_results.md). This stays null
+    # rather than assuming it matched Qwen's value — do not guess a
+    # figure the frozen documentation does not state.
+    max_memory: null
+
+# Deterministic generation settings used for the completed run — identical
+# to configs/replication/models_llama.yaml's precommitted template; not
+# changed for this provenance copy.
+generation:
+  do_sample: false
+  max_new_tokens: 32
+  num_beams: 1

@@ -1,0 +1,58 @@
+# POST-RUN PROVENANCE COPY.
+# This file was created after the experiment for reproducibility.
+# It is NOT a preregistration and does not replace the historical
+# pre-run configuration (configs/pilot.yaml).
+#
+# Records the exact pilot-level configuration values that produced the
+# frozen Qwen results in docs/qwen_pilot_results.md. configs/pilot.yaml
+# remains the general, editable, multi-model (both `llama` and `qwen`)
+# pre-run config with source_roles left null for both models; this file
+# is a single-model snapshot of what was actually true for the Qwen run
+# specifically, with the researcher's post-calibration source-role
+# decision filled in.
+
+seed: 42
+
+dataset:
+  hf_dataset_id: akariasai/PopQA
+  split: test
+  # Exact resolved PopQA snapshot used for the run (docs/qwen_pilot_results.md,
+  # "Frozen provenance").
+  revision: 098765c79ea10a2cb19c828324e33281b8336ec0
+  screening_candidates: 500
+  # The frozen run used the targeted primary-conflict-relations screening
+  # frame (docs/qwen_pilot_results.md, "Experimental sample": "The screen
+  # used the committed primary_conflict_relations targeted pool").
+  candidate_pool: primary_conflict_relations
+
+# The frozen Qwen run used the repository's original (pre-runs/-namespace)
+# paths, because it predates the isolated runs/llama/ scheme added for the
+# Llama replication (docs/decisions.md, "Precommit the Llama second-model
+# replication"). This matches configs/pilot.yaml's paths exactly.
+paths:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  results_dir: results
+  figures_dir: figures
+
+sampling:
+  target_kc_items: 30
+  target_kw_items: 30
+  margin_bins: [low, medium, high]
+
+models:
+  - qwen
+
+# Researcher-confirmed source roles after direct calibration
+# (docs/qwen_pilot_results.md, "Experimental sample"). Unlike
+# configs/pilot.yaml (which keeps these null as a general pre-run
+# template), this provenance copy records the actual decision made.
+source_roles:
+  qwen:
+    preferred_source: a government website
+    dispreferred_source: an anonymous online forum post
+
+prompts_config: configs/prompts.yaml
+sources_config: configs/sources.yaml
+models_config: configs/frozen/qwen_model_frozen.yaml
