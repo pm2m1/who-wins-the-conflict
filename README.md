@@ -46,71 +46,91 @@ Interpretation is restricted to genuine conflict trials — see
 
 ## Project status
 
-- Literature synthesis, research design, and methodology documents:
-  **written** (`docs/`).
-- Implementation (data pipeline, model adapters, scoring, source
-  calibration, experiment runner, evaluation, analysis): **written and
-  unit-tested**.
-- Real PopQA download: **validated** during implementation
-  (`akariasai/PopQA`, test split) — see `docs/reference_implementations.md`
-  and `data/README.md` for recreation instructions. Not committed to this
-  repository.
-- Real-model infrastructure validation: **completed**, on Google Colab
-  (NVIDIA Tesla T4 GPU), using `Qwen/Qwen2.5-3B-Instruct` strictly as an
-  infrastructure-validation stand-in — not as a research or pilot model.
-  Real model weights were loaded (float16, CUDA) under an exactly
-  resolved and pinned Hugging Face revision, and real teacher-forced
-  log-probability scoring was empirically validated against actual model
-  logits: deterministic generation, `Answer:` scoring-prefix alignment,
-  candidate token boundary handling, A/B vs. B/A score-order invariance,
-  repeated-score determinism, multi-token candidate scoring, length
-  normalization, and punctuation/token-boundary reconstruction. A real,
-  pinned PopQA download and a real 20-item deterministic baseline smoke
-  screen were also run, the latter twice (before/after the baseline
-  abstention fix, same items/revision/raw generations) to independently
-  confirm that fix on real model output. Full detail, exact SHAs, and
-  before/after counts are in `docs/decisions.md`, "Real-model
-  infrastructure validation on Google Colab". This is infrastructure
-  validation only — it is not a pilot run, an experiment result, or a
-  research finding, and none of it used the intended research model.
-- Real `Qwen/Qwen2.5-7B-Instruct` feasibility validation: **completed**,
-  also on Google Colab (free NVIDIA Tesla T4), unquantized in float16
-  with `device_map="auto"` and an explicit memory cap
-  (`max_memory={0: "12.0GiB", "cpu": "5GiB"}`) to force GPU+CPU offload
-  (23 modules GPU / 9 CPU / 0 disk) — this is the actual intended
-  research model, run under an exactly resolved and pinned revision
-  (`a09a35458c702b33eeacc393d103063234e8bc28`). A real diagnostic
-  ("What is the capital of France?") completed successfully and the
-  strict Decision prompt/parser was re-confirmed against this same real
-  model. Full detail in `docs/decisions.md`, "Real Qwen2.5-7B-Instruct
-  feasibility validation on Google Colab". **This is infrastructure/
-  feasibility validation, not a pilot run and not a research finding.**
-  Qwen2.5-7B-Instruct has been run for this diagnostic purpose only —
-  it has **not** been run for PopQA research screening or the pilot.
-- Real `Qwen/Qwen2.5-7B-Instruct` research-model run: **completed and
-  frozen.** Baseline screen (500 targeted candidates screened, 498
-  baseline records), source calibration (real, strict-format, 30
-  presentations), and the C0-C4 pilot itself (60 items x 5 conditions =
-  300 generations, 120 genuine conflict trials) have all been run once,
-  on the researcher's own RTX 3090, and the resulting analysis is frozen.
-  Full provenance, all primary/secondary/exploratory results, and
-  hypothesis status are in `docs/qwen_pilot_results.md`. See
-  `docs/decisions.md`, "Freeze the first Qwen pilot after validated
-  analysis."
-- `Llama-3.1-8B-Instruct` **has not been run** — it additionally requires
-  gated Hugging Face access not yet provisioned. No second-model
-  replication exists yet, so **no multi-model or general conclusion is
-  drawn anywhere in this repository.** `docs/qwen_pilot_results.md`
-  reports Qwen2.5-7B-Instruct pilot results only.
-- `Llama-3.1-8B-Instruct` replication: **protocol and configuration
-  prepared, not executed.** See `docs/llama_replication_protocol.md` and
-  `configs/replication/`. No Llama scientific result of any kind exists
-  yet — do not read the presence of this preparation as a validated or
-  replicated result.
-- **Pilot status: Qwen2.5-7B-Instruct pilot completed and frozen; see
-  `docs/qwen_pilot_results.md`. Llama-3.1-8B-Instruct pilot not yet run;
-  its replication protocol/configuration are prepared in
-  `docs/llama_replication_protocol.md`.**
+The controlled pilot has now been completed on **two instruction-tuned
+models**:
+
+- `Qwen/Qwen2.5-7B-Instruct`
+- `meta-llama/Llama-3.1-8B-Instruct`
+
+Each model was screened independently on the same pinned PopQA candidate
+frame and then evaluated on a model-specific 60-item sample
+(30 knowledge-correct / KC and 30 knowledge-wrong / KW items), with each
+item run through all five C0-C4 conditions.
+
+That gives:
+
+- **300 generations per model**
+- **600 total pilot generations**
+- **120 genuine conflict trials per model**
+- **240 total primary conflict trials**
+- deterministic C0 baseline reproduction of **60/60** selected items for
+  each model
+
+The first Qwen pilot is frozen in
+[`docs/qwen_pilot_results.md`](docs/qwen_pilot_results.md).
+
+The completed two-model synthesis is frozen in
+[`docs/cross_model_pilot_results.md`](docs/cross_model_pilot_results.md).
+
+### Results at a glance
+
+The primary outcome is **committed context adoption**: whether the model
+explicitly commits to the answer asserted by conflicting evidence.
+
+| Conflict type | Qwen preferred | Qwen dispreferred | Qwen delta | Llama preferred | Llama dispreferred | Llama delta |
+|---|---:|---:|---:|---:|---:|---:|
+| Harmful override (KC) | 20.0% | 10.0% | +10.0 pp | 33.3% | 36.7% | -3.3 pp |
+| Corrective override (KW) | 83.3% | 56.7% | **+26.7 pp** | 96.7% | 100.0% | -3.3 pp |
+
+For Qwen corrective conflicts, the paired source comparison was
+17 both, 8 preferred-only, 0 dispreferred-only, and 5 neither
+(exact two-sided `p = 0.0078125`).
+
+The corresponding Llama corrective comparison was
+29 both, 0 preferred-only, 1 dispreferred-only, and 0 neither
+(exact two-sided `p = 1.0`).
+
+The strongest Qwen result therefore **did not replicate in Llama**.
+
+The current pilot evidence supports a **model-dependent boundary
+condition**, not the universal claim that preferred source attribution
+causes LLMs to follow conflicting evidence more often.
+
+A secondary mechanistic analysis also distinguishes **tentative answer
+content** from **committed adoption**. Both models can place the contextual
+candidate in the required `Answer:` field without necessarily committing
+to it, although this behavior is much more frequent in Qwen than in
+Llama. The Qwen decomposition was post-hoc; the Llama follow-up was
+pre-specified before the replication outcomes were observed.
+
+### Reproducibility
+
+Both research-model runs used:
+
+- the exact PopQA revision
+  `098765c79ea10a2cb19c828324e33281b8336ec0`;
+- deterministic generation;
+- exact pinned Hugging Face model revisions;
+- unquantized float16 execution;
+- an NVIDIA RTX 3090;
+- recorded prompt/model/dataset provenance;
+- independently SHA256-verified off-host final archives.
+
+Model revisions:
+
+- Qwen2.5-7B-Instruct:
+  `a09a35458c702b33eeacc393d103063234e8bc28`
+- Llama-3.1-8B-Instruct:
+  `0e9e39f249a16976918f6564b8830bc894c89659`
+
+The implementation includes the data pipeline, baseline screening,
+candidate scoring, source calibration, pilot construction, deterministic
+generation, evaluation, plotting, paired checks, sensitivity analyses,
+and exploratory regression infrastructure.
+
+The original experimental design and methodological decisions remain in
+`docs/`; model outputs and large runtime artifacts are intentionally not
+committed.
 
 ## Repository layout
 
@@ -223,14 +243,40 @@ one will be added once an actual workflow run has succeeded.
 
 ## Limitations
 
-This is a pilot (60 items x 5 conditions = 300 generations for the one
-model run so far), not a publication-scale study, and currently reflects
-**one model only** (`Qwen/Qwen2.5-7B-Instruct`) — `Llama-3.1-8B-Instruct`
-has not been run, so nothing here supports a multi-model or general
-conclusion. Evidence is prompt-injected and templated, not retrieved from
-real documents. Source preference is calibrated via direct pairwise
-elicitation only (never latent/behavioral preference). Self-reported
-confidence is exploratory and not validated as calibrated. See
-`docs/qwen_pilot_results.md` ("Limitations") for the full, pilot-specific
-list, `docs/research_proposal.md` ("Limitations") for the pre-result
-scope decisions, and `docs/decisions.md` for their rationale.
+This remains a **pilot-scale two-model study**, not a publication-scale
+benchmark.
+
+Important limitations include:
+
+- only two instruction-tuned models were tested;
+- each model contributes only 60 selected factual items and 120 primary
+  conflict trials;
+- KC/KW membership and parametric margins are model-specific, so the final
+  selected item sets differ between Qwen and Llama;
+- the selected relation distributions are not balanced;
+- source calibration was performed independently for each model, so the
+  dispreferred labels differ (`anonymous online forum post` for Qwen,
+  `social media post` for Llama);
+- source preference is based on direct elicitation rather than a validated
+  latent trust or credibility measure;
+- evidence is standardized and prompt-injected rather than retrieved from
+  naturally occurring documents;
+- Llama corrective adoption is near ceiling under both source conditions,
+  which limits sensitivity to source effects;
+- the Qwen tentative-answer decomposition was post-hoc, while the Llama
+  version was pre-specified as a secondary follow-up;
+- the exploratory Llama ordinary logistic regression did not converge due
+  to quasi-separation;
+- the pilot does not use an item-aware mixed-effects model;
+- results should not be generalized to LLMs as a class.
+
+The main next step is a larger, pre-specified study with more model
+families, a shared cross-model item set, balanced relations, a common
+validated source hierarchy alongside model-specific calibration, and
+item-aware statistical modeling.
+
+See
+[`docs/cross_model_pilot_results.md`](docs/cross_model_pilot_results.md)
+for the complete result interpretation, hypothesis-by-hypothesis synthesis,
+provenance, sensitivity analyses, mechanistic findings, and follow-up
+design.
