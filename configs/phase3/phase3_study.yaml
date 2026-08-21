@@ -1,0 +1,129 @@
+# Phase 3 scaled-study configuration.
+#
+# STATUS: PHASE 3B. NOT RUNNABLE AGAINST REAL MODELS.
+#
+# Implements the frozen protocol in docs/phase3_scaled_study_design.md
+# (commit d684f39). That document is historical, pre-result material and is
+# not reinterpreted here.
+#
+# Two of the four models are deliberately UNRESOLVED: the researcher
+# approved the Mistral-7B-Instruct and Gemma-2-9B-it *families* (§7,
+# §42.1), but the exact repository id, instruction-tuned release, and
+# commit SHA are resolved and frozen only in Phase 3C. They are recorded as
+# null here rather than guessed. `conflict_eval.phase3.real_run_gate`
+# refuses a real run while any of them is null:
+#
+#     NO REAL PHASE 3 MODEL MAY RUN BEFORE 3C IS FROZEN (§41).
+#
+# This file does NOT modify configs/pilot.yaml, configs/models.yaml, or
+# configs/frozen/ — Phase 2 continues to behave exactly as before.
+
+seed: 42
+
+dataset:
+  hf_dataset_id: akariasai/PopQA
+  split: test
+  # Same pinned snapshot as Phase 2, so Phase 3 draws from the same
+  # underlying factual population (§8).
+  revision: 098765c79ea10a2cb19c828324e33281b8336ec0
+  candidate_pool: primary_conflict_relations
+
+# FROZEN common pair (§19). These are fixed source IDENTITIES for the
+# common arm, NOT preferred/dispreferred roles for any model. The loader
+# rejects any config that changes them.
+sources:
+  common_source_a: a government website
+  common_source_b: an anonymous online forum post
+
+models:
+  # --- replication models: frozen Phase 2 artifacts and pairs (§7, §20.1)
+  qwen:
+    family: Qwen2.5-7B-Instruct
+    role: replication
+    hf_model_id: Qwen/Qwen2.5-7B-Instruct
+    revision: a09a35458c702b33eeacc393d103063234e8bc28
+    preferred_source: a government website
+    dispreferred_source: an anonymous online forum post
+
+  llama:
+    family: Llama-3.1-8B-Instruct
+    role: replication
+    hf_model_id: meta-llama/Llama-3.1-8B-Instruct
+    revision: 0e9e39f249a16976918f6564b8830bc894c89659
+    preferred_source: a government website
+    dispreferred_source: a social media post
+
+  # --- approved families, UNRESOLVED until Phase 3C (§7, §20.2, §42.1) ---
+  # Phase 3C must verify and freeze: exact repository ID, exact
+  # instruction-tuned release, exact resolved commit SHA, tokenizer/model
+  # revision equality, licensing/access, float16 feasibility on the
+  # RTX-3090-class setup, no-quantization feasibility, and compatibility
+  # with the existing sequence-logprob scoring pipeline. If a family cannot
+  # satisfy these, STOP and return to researcher approval — never
+  # substitute another model silently.
+  model_c:
+    family: Mistral-7B-Instruct
+    role: new
+    hf_model_id: null
+    revision: null
+    # Set only after that model's own Phase 3C calibration (§20.2).
+    preferred_source: null
+    dispreferred_source: null
+
+  model_d:
+    family: Gemma-2-9B-it
+    role: new
+    hf_model_id: null
+    revision: null
+    preferred_source: null
+    dispreferred_source: null
+
+# Blockwise pre-outcome screening (§11). Stopping may use baseline/
+# eligibility supply only — never any Phase 3 outcome.
+screening:
+  block_size: 250
+  ceiling_per_model: 2000
+  reserve: 2
+  # Cohort A supply: >= 34 fresh Qwen KW per stratum (32 target + 2).
+  cohort_a_per_stratum_supply: 34
+  # Cohort B supply: >= 10 per (relation x group x stratum) cell (8 + 2).
+  cohort_b_cell_supply: 10
+
+cohorts:
+  # Cohort A — SOLE PRIMARY CONFIRMATORY (§15.1). Margin strata only; no
+  # relation quota, deliberately, so a scarce relation can never make the
+  # primary replication untestable.
+  a:
+    model: qwen
+    knowledge_group: KW
+    per_stratum_target: 32
+    total_target: 96
+    relation_dominance_flag: 0.60
+    # Phase 3C supplies the real frozen Phase 2 Qwen KW item ids here.
+    # They are NOT present in this checkout and must never be invented.
+    phase2_excluded_ids: null
+
+  # Cohort B — SECONDARY CONFIRMATORY / generalization (§15.2, §32).
+  b:
+    cell_target: 8
+    cell_minimum: 6
+    relations: [country, sport, place of birth, mother]
+    strata: [low, medium, high]
+
+  # Cohort C — SECONDARY CONFIRMATORY / cross-model (§16).
+  c:
+    target_size: 96
+
+paths:
+  # Isolated Phase 3 namespace; runs/ is already git-ignored in full.
+  results_dir: runs/phase3/results
+  figures_dir: runs/phase3/figures
+  manifest_dir: runs/phase3/manifests
+
+prompts_config: configs/prompts.yaml
+sources_config: configs/sources.yaml
+
+# Set to true ONLY at the Phase 3C pre-run freeze, and only alongside a
+# frozen, fully-resolved manifest. The gate re-derives readiness from actual
+# field values, so this flag is not self-certifying.
+ready_for_real_run: false
