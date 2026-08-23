@@ -20,6 +20,8 @@ from conflict_eval.phase3.analysis_status import (
 )
 from conflict_eval.phase3.config import Phase3ConfigError, load_phase3_config
 from conflict_eval.phase3.constants import (
+    ARM_DISABLED_BY_CALIBRATION,
+    ARM_UNRESOLVED,
     FROZEN_MODEL_REVISIONS,
     STATUS_DIAGNOSTIC,
     STATUS_EXPLORATORY,
@@ -59,7 +61,7 @@ def _write_config(tmp_path, mutate=None):
 def test_committed_config_loads():
     config = load_phase3_config(COMMITTED_CONFIG)
     assert config.seed == 42
-    assert set(config.models) == {"qwen", "llama", "model_c", "model_d"}
+    assert set(config.models) == {"qwen", "llama", "mistral", "gemma"}
 
 
 def test_committed_config_pins_frozen_replication_artifacts():
@@ -71,20 +73,39 @@ def test_committed_config_pins_frozen_replication_artifacts():
         assert entry.resolved is True
 
 
-def test_committed_config_leaves_new_families_unresolved():
-    """The approved families have no exact release/SHA until Phase 3C."""
+def test_committed_config_resolves_the_new_families_at_phase3c():
+    """Phase 3C resolved both approved families to exact releases/SHAs."""
     config = load_phase3_config(COMMITTED_CONFIG)
-    assert config.unresolved_models() == ["model_c", "model_d"]
-    for key in ("model_c", "model_d"):
+    assert config.unresolved_models() == []
+    assert config.model("mistral").hf_model_id == "mistralai/Mistral-7B-Instruct-v0.3"
+    assert (
+        config.model("mistral").revision
+        == "c170c708c41dac9275d15a8fff4eca08d52bab71"
+    )
+    assert config.model("gemma").hf_model_id == "google/gemma-2-9b-it"
+    assert (
+        config.model("gemma").revision == "11c9b309abf73637e4b6f9a3fa1e92e615547819"
+    )
+
+
+def test_committed_config_disables_new_model_arms_under_the_frozen_rule():
+    """Both new models had calibration tied/heavily malformed, so §34 puts
+    them on the common arm only with null roles -- by design, not omission."""
+    config = load_phase3_config(COMMITTED_CONFIG)
+    assert config.common_arm_only_models() == ["gemma", "mistral"]
+    assert config.model_specific_arm_models() == ["llama", "qwen"]
+    for key in ("mistral", "gemma"):
         entry = config.model(key)
-        assert entry.hf_model_id is None
-        assert entry.revision is None
+        assert entry.arm_state == ARM_DISABLED_BY_CALIBRATION
         assert entry.preferred_source is None
         assert entry.dispreferred_source is None
-    assert {config.model("model_c").family, config.model("model_d").family} == {
-        "Mistral-7B-Instruct",
-        "Gemma-2-9B-it",
-    }
+        assert entry.model_specific_arm_reason
+        assert entry.calibration_provenance
+        assert list(entry.condition_set) == ["C0", "K1", "K2", "K3", "K4"]
+    # No calibration result is fabricated: the recorded counts are the ones
+    # actually observed.
+    assert config.model("gemma").calibration_provenance["parser_valid_trials"] == 0
+    assert config.model("mistral").calibration_provenance["parser_valid_trials"] == 30
 
 
 def test_committed_config_is_not_marked_ready_for_a_real_run():
@@ -119,34 +140,99 @@ def test_config_rejects_a_changed_replication_source_pair(tmp_path):
         load_phase3_config(path)
 
 
-def test_config_rejects_an_invented_new_model_id(tmp_path):
-    """Inventing a Mistral/Gemma repository id now is explicitly forbidden."""
+def test_config_rejects_a_partially_resolved_new_model(tmp_path):
+    """Identity is all-or-nothing: a half-resolved model cannot slip through."""
     path = _write_config(
-        tmp_path,
-        lambda d: d["models"]["model_c"].update(
-            hf_model_id="mistralai/Mistral-7B-Instruct-v0.3"
-        ),
+        tmp_path, lambda d: d["models"]["mistral"].update(revision=None)
     )
-    with pytest.raises(Phase3ConfigError, match="must remain null until Phase 3C"):
+    with pytest.raises(Phase3ConfigError, match="partially resolved identity"):
         load_phase3_config(path)
 
 
-def test_config_rejects_an_invented_new_model_revision(tmp_path):
+def test_config_rejects_a_mutable_new_model_revision(tmp_path):
     path = _write_config(
-        tmp_path, lambda d: d["models"]["model_d"].update(revision="a" * 40)
+        tmp_path, lambda d: d["models"]["gemma"].update(revision="main")
     )
-    with pytest.raises(Phase3ConfigError, match="must remain null until Phase 3C"):
+    with pytest.raises(Phase3ConfigError, match="exact immutable"):
         load_phase3_config(path)
 
 
-def test_config_rejects_invented_new_model_source_roles(tmp_path):
+def test_config_rejects_a_source_role_on_a_disabled_arm(tmp_path):
+    """Disabling the arm IS the refusal to invent a pair (§20.2, §34)."""
     path = _write_config(
         tmp_path,
-        lambda d: d["models"]["model_c"].update(
+        lambda d: d["models"]["mistral"].update(
             preferred_source="a government website"
         ),
     )
-    with pytest.raises(Phase3ConfigError, match="must remain null until Phase 3C"):
+    with pytest.raises(Phase3ConfigError, match="must leave both source roles null"):
+        load_phase3_config(path)
+
+
+def test_config_rejects_a_disabled_arm_without_a_reason(tmp_path):
+    path = _write_config(
+        tmp_path, lambda d: d["models"]["gemma"].pop("model_specific_arm_reason")
+    )
+    with pytest.raises(Phase3ConfigError, match="no model_specific_arm_reason"):
+        load_phase3_config(path)
+
+
+def test_config_rejects_a_disabled_arm_without_calibration_provenance(tmp_path):
+    path = _write_config(
+        tmp_path, lambda d: d["models"]["mistral"].pop("calibration_provenance")
+    )
+    with pytest.raises(Phase3ConfigError, match="no calibration_provenance"):
+        load_phase3_config(path)
+
+
+def test_config_rejects_an_enabled_arm_missing_a_role(tmp_path):
+    def mutate(d):
+        d["models"]["mistral"].update(
+            model_specific_arm_enabled=True,
+            preferred_source="a government website",
+        )
+
+    path = _write_config(tmp_path, mutate)
+    with pytest.raises(Phase3ConfigError, match="requires BOTH roles"):
+        load_phase3_config(path)
+
+
+def test_config_rejects_an_unresolved_arm_state(tmp_path):
+    """A model that never declares its arm state stays UNRESOLVED and blocks."""
+    def mutate(d):
+        entry = d["models"]["mistral"]
+        entry.pop("model_specific_arm_enabled")
+        entry.pop("model_specific_arm_reason")
+
+    path = _write_config(tmp_path, mutate)
+    config = load_phase3_config(path)
+    assert config.model("mistral").arm_state == ARM_UNRESOLVED
+    assert "mistral" in config.unresolved_source_roles()
+    with pytest.raises(Phase3NotReadyError):
+        assert_ready_for_real_run(config, manifest=None)
+
+
+def test_config_rejects_disabling_a_replication_arm(tmp_path):
+    """Qwen/Llama carry the frozen Phase 2 replication pair; their arm
+    cannot be switched off."""
+    def mutate(d):
+        # Clear the roles too, so this isolates the replication rule rather
+        # than tripping the disabled-arm-must-have-null-roles check first.
+        d["models"]["qwen"].update(
+            model_specific_arm_enabled=False,
+            model_specific_arm_reason="attempted downgrade",
+            preferred_source=None,
+            dispreferred_source=None,
+        )
+
+    path = _write_config(tmp_path, mutate)
+    # Rejected either by the frozen-pair guard (§20.1) or by the
+    # replication-arm guard -- both are layers of the same protection, and
+    # which one fires first does not matter. What matters is that a
+    # replication model can never be downgraded to common-arm-only.
+    with pytest.raises(
+        Phase3ConfigError, match="frozen Phase 2 source pair|must keep its"
+    ):
         load_phase3_config(path)
 
 
@@ -172,13 +258,52 @@ def test_gate_blocks_the_committed_phase3b_config():
 
 
 def test_gate_reports_every_blocker_not_just_the_first():
+    """The gate must accumulate blockers, not short-circuit on the first.
+
+    Asserted against the blockers that legitimately survive at the current
+    pre-freeze state. Blockers that Phase 3C has genuinely resolved (exact
+    model ids/revisions, arm state) are deliberately NOT asserted -- a test
+    that demanded them would be pinning a stale state rather than the
+    accumulate-don't-short-circuit property.
+    """
     config = load_phase3_config(COMMITTED_CONFIG)
     report = check_readiness(config, manifest=None)
     assert report.ready is False
     joined = " ".join(report.blockers)
-    assert "model id/revision unresolved" in joined
-    assert "source roles" in joined
+    assert "ready_for_real_run" in joined
     assert "freeze manifest" in joined
+    # At least the two surviving §36 blockers, reported together.
+    assert len(report.blockers) >= 2
+
+
+def test_gate_blocks_on_incomplete_new_model_calibration_provenance(tmp_path):
+    """§36 requires each new model's calibration artifacts before the freeze.
+
+    A missing artifact hash must surface as a NAMED blocker, so nobody is
+    tempted to invent one to clear the gate.
+    """
+    def mutate(d):
+        d["models"]["gemma"]["calibration_provenance"].pop(
+            "calibration_archive_sha256"
+        )
+
+    config = load_phase3_config(_write_config(tmp_path, mutate))
+    assert config.calibration_provenance_gaps() == {
+        "gemma": ["calibration_archive_sha256"]
+    }
+    blockers = check_readiness(config, manifest=None).blockers
+    assert any(
+        "calibration provenance for new model 'gemma'" in b
+        and "calibration_archive_sha256" in b
+        for b in blockers
+    )
+
+
+def test_replication_models_need_no_phase3_calibration_artifacts():
+    """Qwen/Llama carry frozen Phase 2 pairs (§20.1); demanding Phase 3
+    calibration artifacts from them would be an invented rule."""
+    config = load_phase3_config(COMMITTED_CONFIG)
+    assert set(config.calibration_provenance_gaps()) <= {"mistral", "gemma"}
 
 
 def test_gate_rejects_a_synthetic_manifest_even_if_otherwise_complete(tmp_path):
@@ -213,12 +338,69 @@ def test_gate_still_blocks_when_the_ready_flag_is_set_but_fields_are_unresolved(
 # --- manifest -------------------------------------------------------------
 
 
+# --- §36 minimum provenance shared by the manifest fixtures ---------------
+# Digest values are obviously synthetic but structurally valid (lowercase
+# 64-hex), because these fixtures exercise the VALIDATOR, not real
+# artifacts. No real baseline, exclusion, candidate or trial file exists
+# yet, and none is created by these tests.
+SHA_A = "a" * 64
+SHA_B = "b" * 64
+SHA_C = "c" * 64
+
+ARTIFACT_HASHES_36 = {
+    "phase3_config": SHA_A,
+    "candidate_file": SHA_B,
+    "trial_file": SHA_C,
+}
+ENVIRONMENT_36 = {
+    "python": "3.10.13",
+    "torch": "2.3.1",
+    "cuda": "12.1",
+    "transformers": "4.44.0",
+    "datasets": "2.20.0",
+    "accelerate": "0.33.0",
+}
+HARDWARE_36 = {"gpu_name": "NVIDIA GeForce RTX 3090", "vram": "24GiB"}
+DATASET_36 = {
+    "hf_dataset_id": "akariasai/PopQA",
+    "split": "test",
+    "revision": "0" * 40,
+    "candidate_item_ids": ["syn-1"],
+}
+
+
+def model_provenance_36(**overrides):
+    """The §36 per-model runtime + screening provenance every model needs."""
+    entry = {
+        "dtype": "float16",
+        "quantization": "none",
+        "device_map": {"": 0},
+        "max_memory": {0: "23GiB"},
+        "baseline_file_sha256": SHA_A,
+        "exclusion_file_sha256": SHA_B,
+        "knowledge_membership": {"KC": ["syn-1"], "KW": ["syn-2"]},
+        "margins": {"syn-1": 0.4},
+        "manual_review_decisions": [],
+    }
+    entry.update(overrides)
+    return entry
+
+
 def _manifest(**overrides):
     kwargs = {
         "seed": 42,
         "repository_commit": None,
         "dataset": {"hf_dataset_id": "akariasai/PopQA", "revision": None},
-        "models": {"qwen": {"hf_model_id": None, "revision": None}},
+        "models": {
+            "qwen": {
+                "hf_model_id": None,
+                "revision": None,
+                "model_specific_arm_enabled": True,
+                "preferred_source": "a government website",
+                "dispreferred_source": "an anonymous online forum post",
+                "condition_set": ["C0", "K1", "K2", "K3", "K4", "M1", "M2"],
+            }
+        },
         "prompt_version": "v1",
         "cohorts": {
             "A": {
@@ -346,11 +528,19 @@ def test_freeze_succeeds_only_when_everything_is_resolved():
     manifest = _manifest(
         synthetic=False,
         repository_commit="d684f39",
-        dataset={"hf_dataset_id": "akariasai/PopQA", "revision": "0" * 40},
+        dataset=dict(DATASET_36),
+        artifact_hashes=dict(ARTIFACT_HASHES_36),
+        environment=dict(ENVIRONMENT_36),
+        hardware=dict(HARDWARE_36),
         models={
             "qwen": {
                 "hf_model_id": "Qwen/Qwen2.5-7B-Instruct",
                 "revision": FROZEN_MODEL_REVISIONS["qwen"]["revision"],
+                "model_specific_arm_enabled": True,
+                "preferred_source": "a government website",
+                "dispreferred_source": "an anonymous online forum post",
+                "condition_set": ["C0", "K1", "K2", "K3", "K4", "M1", "M2"],
+                **model_provenance_36(),
             }
         },
     )
@@ -376,13 +566,31 @@ def test_primary_family_requires_no_multiplicity_correction():
 
 
 def test_registry_rejects_a_second_primary_analysis():
+    # Both in cohort A, so this isolates the one-primary rule rather than
+    # tripping the "primary must be Cohort A" guard first.
     with pytest.raises(AnalysisStatusError, match="exactly ONE test"):
         AnalysisRegistry(
             [
                 AnalysisEntry("a", "A", "o", "c", STATUS_PRIMARY, "primary"),
-                AnalysisEntry("b", "B", "o", "c", STATUS_PRIMARY, "primary"),
+                AnalysisEntry("b", "A", "o", "c", STATUS_PRIMARY, "primary"),
             ]
         )
+
+
+def test_primary_must_live_in_cohort_a():
+    """The sole primary test is the Cohort A replication (§28, §44)."""
+    with pytest.raises(AnalysisStatusError, match="but sits in cohort"):
+        AnalysisEntry("b", "B", "o", "c", STATUS_PRIMARY, "primary")
+
+
+def test_cohort_a_never_enters_the_secondary_family():
+    """§28: 'Cohort A never enters the secondary family.'"""
+    with pytest.raises(AnalysisStatusError, match="never enters the secondary"):
+        AnalysisEntry("a2", "A", "o", "c", STATUS_SECONDARY, "secondary")
+    registry = default_registry()
+    for name in registry.secondary_family():
+        entry = next(e for e in registry.entries if e.name == name)
+        assert entry.cohort != "A"
 
 
 def test_status_and_family_must_agree():
@@ -416,11 +624,19 @@ def _real_ready_manifest(mutate=None):
     manifest = _manifest(
         synthetic=False,
         repository_commit="d684f39",
-        dataset={"hf_dataset_id": "akariasai/PopQA", "revision": "0" * 40},
+        dataset=dict(DATASET_36),
+        artifact_hashes=dict(ARTIFACT_HASHES_36),
+        environment=dict(ENVIRONMENT_36),
+        hardware=dict(HARDWARE_36),
         models={
             "qwen": {
                 "hf_model_id": "Qwen/Qwen2.5-7B-Instruct",
                 "revision": FROZEN_MODEL_REVISIONS["qwen"]["revision"],
+                "model_specific_arm_enabled": True,
+                "preferred_source": "a government website",
+                "dispreferred_source": "an anonymous online forum post",
+                "condition_set": ["C0", "K1", "K2", "K3", "K4", "M1", "M2"],
+                **model_provenance_36(),
             }
         },
     )

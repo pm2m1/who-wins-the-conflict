@@ -36,6 +36,14 @@ from conflict_eval.phase3.constants import (
 _VALID_GROUPS = ("KC", "KW")
 
 
+class DisabledArmWithSourceRoleError(ValueError):
+    """Raised when a disabled model-specific arm still carries a source role.
+
+    Disabling the arm under the frozen §34 rule *is* the refusal to invent a
+    preferred/dispreferred pair, so carrying one is self-contradictory.
+    """
+
+
 class UnresolvedSourceRolesError(ValueError):
     """Raised when a model's `M1`/`M2` sources are still unresolved.
 
@@ -74,24 +82,44 @@ def build_phase3_conditions(
     model_dispreferred_source: str | None,
     common_source_a: str = COMMON_SOURCE_A,
     common_source_b: str = COMMON_SOURCE_B,
+    model_specific_arm_enabled: bool = True,
 ) -> list[Phase3TrialSpec]:
-    """Build the seven nominal conditions for one item.
+    """Build the nominal conditions for one item.
 
-    Raises `UnresolvedSourceRolesError` if the model-specific pair is not
-    resolved -- the builder refuses to construct `M1`/`M2` for a model whose
-    roles await Phase 3C calibration (§20.2).
+    With the model-specific arm ENABLED this returns all seven conditions
+    (`C0`, `K1`-`K4`, `M1`, `M2`) and both source roles are mandatory.
+
+    With the arm DISABLED by the frozen §34 calibration rule -- calibration
+    tied, unstable, or heavily malformed -- this returns the **common arm
+    only** (`C0`, `K1`-`K4`). No placeholder `M1`/`M2` specs are created:
+    those observations are never generated, so fabricating empty records for
+    them would later be indistinguishable from a measured null. Both source
+    roles must be `None` in that case, because disabling the arm is exactly
+    the refusal to invent a pair.
+
+    Raises `UnresolvedSourceRolesError` if the arm is enabled but the pair
+    is not resolved -- the builder never guesses a role (§20.2).
     """
     if knowledge_group not in _VALID_GROUPS:
         raise ValueError(
             f"build_phase3_conditions requires knowledge_group in {_VALID_GROUPS}, "
             f"got {knowledge_group!r}"
         )
-    if model_preferred_source is None or model_dispreferred_source is None:
-        raise UnresolvedSourceRolesError(
-            "Model-specific source roles are unresolved; M1/M2 cannot be built. "
-            "Qwen and Llama use their frozen Phase 2 pairs; a new model's pair "
-            "is set only after its Phase 3C calibration "
-            "(docs/phase3_scaled_study_design.md, §20)."
+    if model_specific_arm_enabled:
+        if model_preferred_source is None or model_dispreferred_source is None:
+            raise UnresolvedSourceRolesError(
+                "Model-specific source roles are unresolved; M1/M2 cannot be "
+                "built. Qwen and Llama use their frozen Phase 2 pairs; a new "
+                "model's pair is set only after its Phase 3C calibration "
+                "(docs/phase3_scaled_study_design.md, §20)."
+            )
+    elif model_preferred_source is not None or model_dispreferred_source is not None:
+        raise DisabledArmWithSourceRoleError(
+            "The model-specific arm is disabled but a source role was supplied "
+            f"(preferred={model_preferred_source!r}, "
+            f"dispreferred={model_dispreferred_source!r}). The frozen §34 "
+            "fallback runs the common arm ONLY and never forces a pair "
+            "(docs/phase3_scaled_study_design.md, §20.2, §34)."
         )
 
     if knowledge_group == "KC":
@@ -115,7 +143,7 @@ def build_phase3_conditions(
         conflicting_answer = gold_answer
         conflicting_truth = "true"
 
-    return [
+    specs = [
         Phase3TrialSpec(
             "C0", ARM_BASELINE, "none", "none", None, None, "none"
         ),
@@ -135,12 +163,20 @@ def build_phase3_conditions(
             "K4", ARM_COMMON, "false", "identity_b", common_source_b,
             false_evidence_answer, false_status,
         ),
-        Phase3TrialSpec(
-            "M1", ARM_MODEL_SPECIFIC, conflicting_truth, "preferred",
-            model_preferred_source, conflicting_answer, "conflict",
-        ),
-        Phase3TrialSpec(
-            "M2", ARM_MODEL_SPECIFIC, conflicting_truth, "dispreferred",
-            model_dispreferred_source, conflicting_answer, "conflict",
-        ),
     ]
+    if not model_specific_arm_enabled:
+        # Common arm only (§34). Deliberately no placeholder M1/M2.
+        return specs
+    specs.extend(
+        [
+            Phase3TrialSpec(
+                "M1", ARM_MODEL_SPECIFIC, conflicting_truth, "preferred",
+                model_preferred_source, conflicting_answer, "conflict",
+            ),
+            Phase3TrialSpec(
+                "M2", ARM_MODEL_SPECIFIC, conflicting_truth, "dispreferred",
+                model_dispreferred_source, conflicting_answer, "conflict",
+            ),
+        ]
+    )
+    return specs

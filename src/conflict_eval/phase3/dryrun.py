@@ -171,6 +171,7 @@ def run_synthetic_dryrun(
             foil_answer=record["foil_answer"],
             model_preferred_source=pairs["preferred_source"],
             model_dispreferred_source=pairs["dispreferred_source"],
+            model_specific_arm_enabled=True,
         )
         for spec in specs:
             requests.append(

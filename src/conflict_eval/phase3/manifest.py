@@ -17,9 +17,16 @@ Two safety properties:
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterable
 from typing import Any
 
 from conflict_eval.phase3.analysis_status import AnalysisRegistry, default_registry
+from conflict_eval.phase3.calibration_provenance import (
+    SHA256_PATTERN,
+    CalibrationProvenanceError,
+    missing_required_fields,
+    validate_calibration_provenance,
+)
 from conflict_eval.phase3.constants import (
     COHORT_A_PER_STRATUM_SUPPLY,
     COHORT_A_PER_STRATUM_TARGET,
@@ -28,10 +35,14 @@ from conflict_eval.phase3.constants import (
     COHORT_B_CELL_TARGET,
     COMMON_SOURCE_A,
     COMMON_SOURCE_B,
+    CONDITIONS_COMMON_ARM_ONLY,
+    CONDITIONS_WITH_MODEL_SPECIFIC_ARM,
     MARGIN_STRATA,
+    MODEL_SPECIFIC_ARM_CONDITIONS,
     NOMINAL_CONDITIONS,
     SCREENING_BLOCK_SIZE,
     SCREENING_CEILING_PER_MODEL,
+    SYMBOLIC_REVISIONS,
 )
 
 # Fields §36 requires before the manifest may be frozen for a real run.
@@ -45,11 +56,48 @@ REQUIRED_FREEZE_FIELDS = (
     "cohort_membership_map",
     "condition_specification",
     "deduplication_alias_map",
+    # §36 "margin-bin edges" -- the frozen bin boundaries per model/group.
     "final_margin_strata",
     "screening",
     "analysis_status",
     "seed",
+    "artifact_hashes",
+    "environment",
+    "hardware",
 )
+
+# --- §36 artifact digests (top level, inside `artifact_hashes`) -----------
+# "Repository commit SHA; Phase 3 config file contents and SHA256."
+# "Dataset id, split, resolved revision; candidate file SHA256 and IDs."
+# "The full condition specification and trial file SHA256."
+REQUIRED_ARTIFACT_HASHES = (
+    "phase3_config",
+    "candidate_file",
+    "trial_file",
+)
+
+# --- §36 per-model provenance --------------------------------------------
+# "Every model: id, requested revision, resolved revision, precision,
+#  quantization status (none), device_map, max_memory actually used."
+REQUIRED_MODEL_RUNTIME_FIELDS = (
+    "dtype",
+    "quantization",
+    "device_map",
+    "max_memory",
+)
+# "Per model: baseline and exclusion file SHA256; KC/KW membership; margins;
+#  margin-bin edges; manual-review decisions."
+REQUIRED_MODEL_SHA_FIELDS = (
+    "baseline_file_sha256",
+    "exclusion_file_sha256",
+)
+REQUIRED_MODEL_SCREENING_FIELDS = (
+    "knowledge_membership",
+    "margins",
+)
+
+# §36 "Dataset id, split, resolved revision; candidate file SHA256 and IDs."
+REQUIRED_DATASET_FIELDS = ("hf_dataset_id", "split", "revision", "candidate_item_ids")
 
 # Per-cohort provenance §36 requires *inside* `cohorts`. Validated by
 # content, not merely by key presence, so an incomplete real manifest
@@ -92,6 +140,320 @@ REQUIRED_COHORT_C_PER_MODEL_FIELDS = (
 
 class ManifestError(ValueError):
     """Raised when a manifest is internally inconsistent."""
+
+
+def model_arm_provenance(entry) -> dict[str, Any]:
+    """Serialize one model's identity + model-specific arm state (§20.2, §34,
+    §36).
+
+    Records the tri-state arm explicitly so a manifest can never leave the
+    reader guessing whether a null source pair means "disabled by the frozen
+    calibration rule" or "nobody calibrated this model yet".
+
+    The full `calibration_provenance` record is carried through verbatim --
+    artifact hashes, trial counts, preference matrix and the researcher's
+    stated reason -- because §36 requires those *in the manifest*, not merely
+    in the config that produced it. For `role == "new"` models the missing
+    §36 fields are listed alongside it, so an incomplete record is visible in
+    the artifact itself rather than only at the gate.
+    """
+    record = {
+        "hf_model_id": entry.hf_model_id,
+        "requested_revision": entry.revision,
+        "resolved_revision": entry.revision,
+        "family": entry.family,
+        "role": entry.role,
+        "dtype": "float16",
+        "quantization": "none",
+        "model_specific_arm_enabled": entry.runs_model_specific_arm,
+        "model_specific_arm_state": entry.arm_state,
+        "model_specific_arm_reason": entry.model_specific_arm_reason,
+        "preferred_source": entry.preferred_source,
+        "dispreferred_source": entry.dispreferred_source,
+        "calibration_provenance": entry.calibration_provenance,
+        # The conditions this model ACTUALLY runs. The study-level
+        # `condition_specification` is the full seven-condition design
+        # vocabulary; this per-model field is the realized subset (§22, §34).
+        "condition_set": list(entry.condition_set),
+    }
+    if entry.role == "new":
+        record["calibration_provenance_missing_fields"] = missing_required_fields(
+            entry.calibration_provenance
+        )
+    return record
+
+
+def _sha_problem(label: str, value: Any) -> str | None:
+    """Validate one §36 digest against the SINGLE shared SHA256 pattern.
+
+    Deliberately reuses `calibration_provenance.SHA256_PATTERN` rather than
+    defining a second regex: one definition means a digest that is valid in
+    one part of the freeze manifest can never be invalid in another.
+    """
+    if value is None or value == "":
+        return f"{label} is missing; §36 requires this SHA256"
+    if not isinstance(value, str) or not SHA256_PATTERN.fullmatch(value):
+        return (
+            f"{label} must be a lowercase 64-character hex SHA256, got "
+            f"{value!r}. Placeholder or prose values are not provenance (§36)."
+        )
+    return None
+
+
+def _populated_capture_problems(label: str, capture: Any) -> list[str]:
+    """§36 "Environment and hardware capture".
+
+    Presence is not capture. The Phase 3B builder seeds these with `None`
+    placeholders precisely so they are visibly unfilled; a frozen manifest
+    that still carries them has recorded nothing, so every value must be
+    populated.
+    """
+    if capture is None:
+        return [f"{label} capture is null; §36 requires an actual capture"]
+    if not isinstance(capture, dict) or not capture:
+        return [
+            (
+                f"{label} capture must be a non-empty mapping, got "
+                f"{type(capture).__name__} (§36)"
+            )
+        ]
+    unfilled = sorted(k for k, v in capture.items() if v in (None, "", {}, []))
+    if unfilled:
+        return [
+            (
+                f"{label} capture still has unpopulated placeholder field(s) "
+                f"{unfilled}; §36 requires an actual capture, not the unfilled "
+                "template"
+            )
+        ]
+    return []
+
+
+def _artifact_hash_problems(data: dict[str, Any]) -> list[str]:
+    """§36 top-level artifact digests."""
+    problems: list[str] = []
+    hashes = data.get("artifact_hashes")
+    if not isinstance(hashes, dict) or not hashes:
+        return [
+            (
+                "artifact_hashes is missing or empty; §36 requires the Phase 3 "
+                "config, candidate file and trial file SHA256 (§36)"
+            )
+        ]
+    for field in REQUIRED_ARTIFACT_HASHES:
+        problem = _sha_problem(f"artifact_hashes[{field!r}]", hashes.get(field))
+        if problem:
+            problems.append(problem)
+    return problems
+
+
+def _dataset_problems(data: dict[str, Any]) -> list[str]:
+    """§36 "Dataset id, split, resolved revision; candidate file SHA256 and
+    IDs." The digest lives in `artifact_hashes['candidate_file']`; the IDs
+    live here."""
+    dataset = data.get("dataset")
+    if not isinstance(dataset, dict) or not dataset:
+        return ["dataset provenance is missing (§36)"]
+    problems = []
+    for field in REQUIRED_DATASET_FIELDS:
+        if dataset.get(field) in (None, "", [], {}):
+            problems.append(
+                f"dataset provenance missing {field!r}; §36 requires the "
+                "dataset id, split, resolved revision and the candidate ids"
+            )
+    return problems
+
+
+def _model_screening_provenance_problems(key: str, entry: dict[str, Any]) -> list[str]:
+    """§36 per-model runtime + screening provenance.
+
+    Covers "precision, quantization status (none), device_map, max_memory
+    actually used" and "baseline and exclusion file SHA256; KC/KW
+    membership; margins; manual-review decisions".
+    """
+    problems: list[str] = []
+    for field in REQUIRED_MODEL_RUNTIME_FIELDS:
+        if entry.get(field) in (None, "", {}, []):
+            problems.append(
+                f"model {key!r} is missing runtime provenance {field!r}; §36 "
+                "requires precision, quantization, device_map and max_memory "
+                "as actually used"
+            )
+    quantization = entry.get("quantization")
+    if quantization is not None and str(quantization).lower() not in ("none", "false"):
+        problems.append(
+            f"model {key!r} records quantization={quantization!r}; the frozen "
+            "design runs unquantized (§7, §36)"
+        )
+    for field in REQUIRED_MODEL_SHA_FIELDS:
+        problem = _sha_problem(f"model {key!r} {field}", entry.get(field))
+        if problem:
+            problems.append(problem)
+    for field in REQUIRED_MODEL_SCREENING_FIELDS:
+        if entry.get(field) in (None, "", {}, []):
+            problems.append(
+                f"model {key!r} is missing {field!r}; §36 requires per-model "
+                "KC/KW membership and margins in the freeze manifest"
+            )
+    # Manual-review decisions must be RECORDED. An explicit empty list is a
+    # legitimate finding ("no manual overrides were made"); an absent key is
+    # an unfinished record, exactly as with `preference_matrix`.
+    if "manual_review_decisions" not in entry:
+        problems.append(
+            f"model {key!r} does not record manual_review_decisions; §36 "
+            "requires them (record an explicit empty list if none were made)"
+        )
+    return problems
+
+
+def _model_set_problems(
+    data: dict[str, Any], expected_model_keys: Iterable[str] | None
+) -> list[str]:
+    """§36 "**Every model**: id, requested revision, resolved revision, ..."
+
+    Every per-model rule below is applied per ENTRY, so a manifest that
+    simply omits a model would skip all of them -- including the §34
+    disabled-arm rules and the §36 new-model calibration requirements. The
+    manifest must therefore describe exactly the configured model set: no
+    omissions, and no extras that the config never declared.
+    """
+    if expected_model_keys is None:
+        return []
+    expected = set(expected_model_keys)
+    found = set(data.get("models") or {})
+    problems = []
+    missing = sorted(expected - found)
+    if missing:
+        problems.append(
+            f"freeze manifest omits configured model(s) {missing}; §36 requires "
+            "EVERY model, and an omitted model silently skips its arm-state, "
+            "condition-set and calibration validation"
+        )
+    extra = sorted(found - expected)
+    if extra:
+        problems.append(
+            f"freeze manifest describes model(s) {extra} that the Phase 3 "
+            "config does not declare; the manifest and config must agree "
+            "exactly (§36)"
+        )
+    return problems
+
+
+def _model_arm_problems(key: str, entry: dict[str, Any]) -> list[str]:
+    """Validate one manifest model entry's arm state (§20.2, §34)."""
+    problems: list[str] = []
+    enabled = entry.get("model_specific_arm_enabled")
+    preferred = entry.get("preferred_source")
+    dispreferred = entry.get("dispreferred_source")
+    conditions = entry.get("condition_set")
+
+    if enabled is None:
+        problems.append(
+            f"model {key!r} does not declare model_specific_arm_enabled; the "
+            "arm state must be explicit so a disabled arm is distinguishable "
+            "from an uncalibrated one (§20.2, §34)"
+        )
+        return problems
+
+    if enabled:
+        if not preferred or not dispreferred:
+            problems.append(
+                f"model {key!r} enables the model-specific arm but is missing a "
+                f"source role (preferred={preferred!r}, "
+                f"dispreferred={dispreferred!r}) (§20, §22)"
+            )
+        if conditions is not None and list(conditions) != list(
+            CONDITIONS_WITH_MODEL_SPECIFIC_ARM
+        ):
+            problems.append(
+                f"model {key!r} enables the model-specific arm but its "
+                f"condition_set is {list(conditions)!r}; expected "
+                f"{list(CONDITIONS_WITH_MODEL_SPECIFIC_ARM)} (§22)"
+            )
+    else:
+        for field_name, value in (
+            ("preferred_source", preferred),
+            ("dispreferred_source", dispreferred),
+        ):
+            if value is not None:
+                problems.append(
+                    f"model {key!r} disables the model-specific arm but records "
+                    f"{field_name}={value!r}; the frozen §34 fallback runs the "
+                    "common arm only and never forces a pair"
+                )
+        reason = entry.get("model_specific_arm_reason")
+        if not (isinstance(reason, str) and reason.strip()):
+            problems.append(
+                f"model {key!r} disables the model-specific arm without a "
+                "model_specific_arm_reason; the §34 fallback must be documented "
+                "or it is indistinguishable from an uncalibrated model"
+            )
+        calibration = entry.get("calibration_provenance")
+        if not isinstance(calibration, dict) or not calibration:
+            problems.append(
+                f"model {key!r} disables the model-specific arm without "
+                "calibration_provenance; the calibration that justified the "
+                "fallback must be recorded (§34, §36)"
+            )
+        if conditions is not None and list(conditions) != list(
+            CONDITIONS_COMMON_ARM_ONLY
+        ):
+            problems.append(
+                f"model {key!r} disables the model-specific arm but its "
+                f"condition_set is {list(conditions)!r}; a disabled arm runs the "
+                f"common arm only, {list(CONDITIONS_COMMON_ARM_ONLY)} (§22, §34)"
+            )
+
+    # --- §36 calibration provenance, NEW models only ---------------------
+    # Qwen and Llama are exempt: §20.1 freezes their Phase 2 pairs and asks
+    # for no Phase 3 calibration, so requiring artifacts from them would be
+    # an invented rule rather than a frozen one.
+    if entry.get("role") == "new":
+        calibration = entry.get("calibration_provenance")
+        try:
+            validate_calibration_provenance(
+                f"model {key!r} calibration_provenance", calibration
+            )
+        except CalibrationProvenanceError as exc:
+            problems.append(str(exc))
+        else:
+            missing = missing_required_fields(calibration)
+            if missing:
+                problems.append(
+                    f"model {key!r} is a new model but its calibration "
+                    f"provenance is missing {missing}; §36 requires the "
+                    "calibration output SHA256, preference matrix and the "
+                    "researcher's stated reason for every new model"
+                )
+    return problems
+
+
+def _disabled_arm_observation_problems(data: dict[str, Any]) -> list[str]:
+    """Refuse a manifest that claims M1/M2 observations for a disabled arm.
+
+    Those generations never happened. Recording them -- even as empty
+    placeholders -- would later be indistinguishable from a measured null,
+    which §34 forbids ("this is an informative measurement about that model,
+    not a failure", and never a null result).
+    """
+    problems: list[str] = []
+    models = data.get("models") or {}
+    disabled = {
+        key for key, entry in models.items()
+        if entry.get("model_specific_arm_enabled") is False
+    }
+    if not disabled:
+        return problems
+    model_specific = set(MODEL_SPECIFIC_ARM_CONDITIONS)
+    for alias_key in (data.get("deduplication_alias_map") or {}):
+        parts = str(alias_key).split("|")
+        if len(parts) == 3 and parts[0] in disabled and parts[2] in model_specific:
+            problems.append(
+                f"model {parts[0]!r} has a disabled model-specific arm but the "
+                f"deduplication alias map claims a {parts[2]!r} observation "
+                f"({alias_key!r}); those generations were never run (§22, §34)"
+            )
+    return problems
 
 
 def planned_cohort_a_design() -> dict[str, Any]:
@@ -205,11 +567,23 @@ def _frozen_design_problems(data: dict[str, Any]) -> list[str]:
                 )
 
     # --- Condition design (§22) ------------------------------------------
+    # `condition_specification` is the study-wide NOMINAL DESIGN VOCABULARY:
+    # all seven conditions the design defines. It is NOT a claim that every
+    # model ran all seven. What each model actually runs is its own
+    # `models[key]["condition_set"]`:
+    #
+    #     ENABLED arm                 C0, K1, K2, K3, K4, M1, M2
+    #     DISABLED_BY_CALIBRATION     C0, K1, K2, K3, K4   (§34 common arm only)
+    #
+    # The two are validated against each other by `_model_arm_problems`, and
+    # no placeholder M1/M2 record is ever created for a disabled arm.
     conditions = data.get("condition_specification")
     if conditions is not None and list(conditions) != list(NOMINAL_CONDITIONS):
         problems.append(
-            f"condition specification must be {list(NOMINAL_CONDITIONS)}; found "
-            f"{list(conditions)!r} (frozen design §22)"
+            f"condition specification must be the full seven-condition design "
+            f"vocabulary {list(NOMINAL_CONDITIONS)}; found {list(conditions)!r}. "
+            "Per-model realized conditions belong in models[...]['condition_set'], "
+            "not here (frozen design §22)"
         )
 
     # --- Common source identities (§19) ----------------------------------
@@ -346,6 +720,8 @@ def build_manifest(
     artifact_hashes: dict[str, str] | None = None,
     registry: AnalysisRegistry | None = None,
     synthetic: bool = True,
+    environment: dict[str, Any] | None = None,
+    hardware: dict[str, Any] | None = None,
 ) -> Phase3Manifest:
     """Assemble a Phase 3 manifest.
 
@@ -379,7 +755,16 @@ def build_manifest(
         },
         "cohorts": cohorts,
         "cohort_membership_map": cohort_membership_map,
+        # Study-wide nominal design vocabulary (all seven conditions), NOT a
+        # per-model claim -- see the note in `validate_manifest`. Each model's
+        # realized subset lives in models[key]["condition_set"].
         "condition_specification": list(NOMINAL_CONDITIONS),
+        "condition_specification_note": (
+            "Full design vocabulary. ENABLED model-specific arms run "
+            f"{list(CONDITIONS_WITH_MODEL_SPECIFIC_ARM)}; arms DISABLED under "
+            f"the frozen §34 calibration rule run {list(CONDITIONS_COMMON_ARM_ONLY)} "
+            "and generate no M1/M2 observations at all."
+        ),
         "deduplication_alias_map": deduplication_alias_map,
         "final_margin_strata": final_margin_strata,
         "screening": screening,
@@ -401,8 +786,11 @@ def build_manifest(
             for e in registry.entries
         ],
         "artifact_hashes": artifact_hashes or {},
-        # Phase 3C fills these; never fabricated here.
-        "environment": {
+        # Phase 3C fills these; never fabricated here. The `None` values are
+        # an UNFILLED TEMPLATE, and `validate_manifest` rejects a frozen
+        # manifest that still carries them -- presence is not capture (§36).
+        "environment": environment
+        or {
             "python": None,
             "torch": None,
             "cuda": None,
@@ -410,17 +798,25 @@ def build_manifest(
             "datasets": None,
             "accelerate": None,
         },
-        "hardware": {"gpu_name": None, "vram": None},
+        "hardware": hardware or {"gpu_name": None, "vram": None},
     }
     return Phase3Manifest(data=data)
 
 
-def validate_manifest(manifest: Phase3Manifest) -> list[str]:
+def validate_manifest(
+    manifest: Phase3Manifest, expected_model_keys: Iterable[str] | None = None
+) -> list[str]:
     """Return the list of reasons this manifest cannot authorize a real run.
 
     An empty list means every §36 requirement is satisfied. Callers should
     still go through `real_run_gate.assert_ready_for_real_run`, which also
-    checks the config.
+    checks the config -- and which always supplies `expected_model_keys`
+    from that config, so the model-set invariant is never skipped on the
+    path that actually authorizes a run.
+
+    `expected_model_keys` is optional only because a manifest can be
+    inspected without a config in hand; when it is omitted the model-set
+    check cannot be performed and every other rule still applies.
     """
     problems: list[str] = []
     data = manifest.data
@@ -439,11 +835,36 @@ def validate_manifest(manifest: Phase3Manifest) -> list[str]:
         if data.get(field) in (None, {}, [], ""):
             problems.append(f"required freeze field {field!r} is unresolved (§36)")
 
+    # --- §36 minimum content that key-presence alone cannot guarantee ----
+    problems.extend(_artifact_hash_problems(data))
+    problems.extend(_dataset_problems(data))
+    problems.extend(_populated_capture_problems("environment", data.get("environment")))
+    problems.extend(_populated_capture_problems("hardware", data.get("hardware")))
+    problems.extend(_model_set_problems(data, expected_model_keys))
+
     for key, entry in (data.get("models") or {}).items():
         if not entry.get("hf_model_id") or not entry.get("revision"):
             problems.append(
                 f"model {key!r} has unresolved hf_model_id/revision (Phase 3C, §7)"
             )
+        # A branch/tag pointer moves. Pinning to one would silently change the
+        # artifact under a re-run, so the manifest rejects it here as well as
+        # the config loader -- a manifest can be hand-assembled, and the
+        # freeze artifact is what a replicator actually reads (§35).
+        for field in ("revision", "requested_revision", "resolved_revision"):
+            value = entry.get(field)
+            if isinstance(value, str) and value.strip().lower() in SYMBOLIC_REVISIONS:
+                problems.append(
+                    f"model {key!r} {field} is the mutable pointer {value!r}; a "
+                    "frozen manifest must record an exact immutable commit SHA "
+                    "(§35, §36)"
+                )
+        problems.extend(_model_arm_problems(key, entry))
+        problems.extend(_model_screening_provenance_problems(key, entry))
+
+    # A disabled model-specific arm generates no M1/M2, so the manifest must
+    # not carry observations for conditions that were never run (§22, §34).
+    problems.extend(_disabled_arm_observation_problems(data))
 
     # --- per-cohort CONTENT validation (§36) ------------------------------
     # Key presence is not enough: a real manifest must actually carry the

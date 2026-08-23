@@ -21,11 +21,22 @@ from typing import Any
 
 import yaml
 
+from conflict_eval.phase3.calibration_provenance import (
+    CalibrationProvenanceError,
+    missing_required_fields,
+    validate_calibration_provenance,
+)
 from conflict_eval.phase3.constants import (
+    ARM_DISABLED_BY_CALIBRATION,
+    ARM_ENABLED,
+    ARM_UNRESOLVED,
     COMMON_SOURCE_A,
     COMMON_SOURCE_B,
+    CONDITIONS_COMMON_ARM_ONLY,
+    CONDITIONS_WITH_MODEL_SPECIFIC_ARM,
     FROZEN_MODEL_REVISIONS,
     FROZEN_MODEL_SOURCE_PAIRS,
+    SYMBOLIC_REVISIONS,
 )
 
 
@@ -49,6 +60,36 @@ class Phase3ModelEntry:
     role: str  # "replication" | "new"
     preferred_source: str | None
     dispreferred_source: str | None
+    # Tri-state model-specific arm (§20.2, §34). `None` in the config means
+    # UNRESOLVED -- not yet calibrated -- which still blocks a real run.
+    model_specific_arm_enabled: bool | None = None
+    model_specific_arm_reason: str | None = None
+    calibration_provenance: dict[str, Any] | None = None
+
+    @property
+    def arm_state(self) -> str:
+        """ENABLED / DISABLED_BY_CALIBRATION / UNRESOLVED (§20.2, §34)."""
+        if self.model_specific_arm_enabled is True:
+            return ARM_ENABLED
+        if self.model_specific_arm_enabled is False:
+            return ARM_DISABLED_BY_CALIBRATION
+        return ARM_UNRESOLVED
+
+    @property
+    def runs_model_specific_arm(self) -> bool:
+        return self.arm_state == ARM_ENABLED
+
+    @property
+    def condition_set(self) -> tuple[str, ...]:
+        """The conditions actually generated for this model (§22).
+
+        A disabled arm yields the common arm only -- no placeholder M1/M2.
+        """
+        return (
+            CONDITIONS_WITH_MODEL_SPECIFIC_ARM
+            if self.runs_model_specific_arm
+            else CONDITIONS_COMMON_ARM_ONLY
+        )
 
     @property
     def resolved(self) -> bool:
@@ -88,7 +129,43 @@ class Phase3Config:
         return sorted(k for k, m in self.models.items() if not m.resolved)
 
     def unresolved_source_roles(self) -> list[str]:
-        return sorted(k for k, m in self.models.items() if not m.source_roles_resolved)
+        """Models whose arm state is UNRESOLVED -- neither calibrated into an
+        enabled pair nor explicitly disabled under §34. These still block."""
+        return sorted(
+            k for k, m in self.models.items() if m.arm_state == ARM_UNRESOLVED
+        )
+
+    def model_specific_arm_models(self) -> list[str]:
+        """Models that will actually generate M1/M2 (§22)."""
+        return sorted(k for k, m in self.models.items() if m.runs_model_specific_arm)
+
+    def common_arm_only_models(self) -> list[str]:
+        """Models disabled by the frozen §34 calibration rule."""
+        return sorted(
+            k for k, m in self.models.items()
+            if m.arm_state == ARM_DISABLED_BY_CALIBRATION
+        )
+
+    def calibration_provenance_gaps(self) -> dict[str, list[str]]:
+        """§36-required calibration fields still missing, per NEW model.
+
+        Only `role == "new"` models are checked. Qwen and Llama carry their
+        frozen Phase 2 pairs and are explicitly exempt from fresh calibration
+        (§20.1); the frozen design asks nothing further of them, so demanding
+        Phase 3 calibration artifacts from them would be an invented rule.
+
+        A non-empty result is a FREEZE BLOCKER, not a load error: Phase 3C
+        assembles provenance incrementally, but §36 must be satisfied before
+        the manifest is sealed.
+        """
+        gaps: dict[str, list[str]] = {}
+        for key, entry in sorted(self.models.items()):
+            if entry.role != "new":
+                continue
+            missing = missing_required_fields(entry.calibration_provenance)
+            if missing:
+                gaps[key] = missing
+        return gaps
 
 
 def _load_yaml(path: str | Path) -> dict[str, Any]:
@@ -163,20 +240,111 @@ def load_phase3_config(path: str | Path) -> Phase3Config:
                     f"'dispreferred_source': {dispreferred!r}}}"
                 )
         else:
-            # New families: unresolved is the CORRECT state in Phase 3B.
-            # Reject any attempt to invent an id/SHA/source role now.
+            # New families. Before Phase 3C these are fully unresolved; at
+            # Phase 3C the researcher resolves the exact id/revision and
+            # records the calibration outcome. Identity must be all-or-
+            # nothing so a half-resolved model cannot slip through.
+            if (hf_model_id is None) != (revision is None):
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} has a partially resolved identity "
+                    f"(hf_model_id={hf_model_id!r}, revision={revision!r}). Both "
+                    "must be resolved together at Phase 3C, or both left null "
+                    "(§7, §42.1)."
+                )
+            if revision is not None and revision.strip().lower() in SYMBOLIC_REVISIONS:
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} revision must be an exact immutable "
+                    f"commit SHA, never {revision!r} (§35)."
+                )
+
+        # --- model-specific arm state (§20.2, §34), all roles ------------
+        arm_enabled = entry.get("model_specific_arm_enabled")
+        arm_reason = entry.get("model_specific_arm_reason")
+        calibration = entry.get("calibration_provenance")
+        if arm_enabled is not None and not isinstance(arm_enabled, bool):
+            raise Phase3ConfigError(
+                f"{path}: model {key!r} model_specific_arm_enabled must be a "
+                f"boolean or absent, got {arm_enabled!r}"
+            )
+
+        # Shape-check whatever calibration provenance is recorded (§20.2,
+        # §36). Malformed hashes, placeholder text, inconsistent trial counts
+        # and a matrix that disagrees with its own summary are rejected here.
+        # Completeness is a FREEZE requirement, checked by the manifest and
+        # the real-run gate, so an in-progress Phase 3C record stays loadable
+        # while an incorrect one never does.
+        try:
+            validate_calibration_provenance(
+                f"{path}: model {key!r} calibration_provenance", calibration
+            )
+        except CalibrationProvenanceError as exc:
+            raise Phase3ConfigError(str(exc)) from exc
+
+        if arm_enabled is True:
+            # ENABLED: both roles are mandatory. A half-specified pair is
+            # not a contrast.
+            if preferred is None or dispreferred is None:
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} enables the model-specific arm but "
+                    f"has preferred_source={preferred!r}, "
+                    f"dispreferred_source={dispreferred!r}. An enabled arm "
+                    "requires BOTH roles (§20, §22)."
+                )
+        elif arm_enabled is False:
+            # DISABLED by the frozen §34 calibration rule. Roles MUST stay
+            # null -- disabling the arm is precisely the refusal to invent a
+            # pair -- and an explicit reason plus calibration provenance is
+            # required so this can never be confused with UNRESOLVED.
             for field_name, value in (
-                ("hf_model_id", hf_model_id),
-                ("revision", revision),
                 ("preferred_source", preferred),
                 ("dispreferred_source", dispreferred),
             ):
                 if value is not None:
                     raise Phase3ConfigError(
-                        f"{path}: model {key!r} is an approved-but-unresolved family; "
-                        f"{field_name} must remain null until Phase 3C resolves and "
-                        f"freezes it (§7, §20.2, §42.1). Got {value!r}."
+                        f"{path}: model {key!r} disables the model-specific arm "
+                        f"but still sets {field_name}={value!r}. A disabled arm "
+                        "must leave both source roles null; the frozen rule is "
+                        "to run the common arm only, never to force a pair "
+                        "(§20.2, §34)."
                     )
+            if not (isinstance(arm_reason, str) and arm_reason.strip()):
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} disables the model-specific arm but "
+                    "records no model_specific_arm_reason. The frozen §34 "
+                    "fallback must be documented explicitly, otherwise a "
+                    "not-yet-calibrated model is indistinguishable from a "
+                    "deliberate common-arm-only model (§20.2, §34)."
+                )
+            if not isinstance(calibration, dict) or not calibration:
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} disables the model-specific arm but "
+                    "records no calibration_provenance. The calibration that "
+                    "justified the fallback must be recorded (§34, §36)."
+                )
+        else:
+            # UNRESOLVED: not calibrated. Roles must be null and no reason
+            # may be claimed; the gate keeps blocking.
+            if preferred is not None or dispreferred is not None:
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} has source roles but does not declare "
+                    "model_specific_arm_enabled. Declare the arm state "
+                    "explicitly (§20.2)."
+                )
+            if arm_reason is not None:
+                raise Phase3ConfigError(
+                    f"{path}: model {key!r} records a model_specific_arm_reason "
+                    "without declaring model_specific_arm_enabled. An "
+                    "uncalibrated model may not claim the §34 fallback."
+                )
+
+        if role == "replication" and arm_enabled is not True:
+            # Qwen/Llama carry frozen Phase 2 pairs; their arm is the direct
+            # replication contrast and cannot be switched off here.
+            raise Phase3ConfigError(
+                f"{path}: replication model {key!r} must keep its "
+                "model-specific arm enabled -- it carries the frozen Phase 2 "
+                "pair used for the direct replication (§20.1)."
+            )
 
         family = entry.get("family")
         if not family:
@@ -190,6 +358,9 @@ def load_phase3_config(path: str | Path) -> Phase3Config:
             role=role,
             preferred_source=preferred,
             dispreferred_source=dispreferred,
+            model_specific_arm_enabled=arm_enabled,
+            model_specific_arm_reason=arm_reason,
+            calibration_provenance=calibration,
         )
 
     return Phase3Config(

@@ -1,17 +1,18 @@
 # Phase 3 scaled-study configuration.
 #
-# STATUS: PHASE 3B. NOT RUNNABLE AGAINST REAL MODELS.
+# STATUS: PHASE 3C. Exact model identities resolved and calibration
+# outcomes recorded. NOT YET FROZEN FOR A REAL RUN.
 #
 # Implements the frozen protocol in docs/phase3_scaled_study_design.md
 # (commit d684f39). That document is historical, pre-result material and is
 # not reinterpreted here.
 #
-# Two of the four models are deliberately UNRESOLVED: the researcher
-# approved the Mistral-7B-Instruct and Gemma-2-9B-it *families* (§7,
-# §42.1), but the exact repository id, instruction-tuned release, and
-# commit SHA are resolved and frozen only in Phase 3C. They are recorded as
-# null here rather than guessed. `conflict_eval.phase3.real_run_gate`
-# refuses a real run while any of them is null:
+# Phase 3C resolved the two approved new families to exact releases and
+# revisions, and recorded each model's calibration outcome. Two of the four
+# models run the COMMON ARM ONLY under the frozen §34 rule (calibration
+# tied / heavily malformed) -- their source roles stay null by design, not
+# by omission. `conflict_eval.phase3.real_run_gate` still refuses a real
+# run until the Phase 3C freeze is complete:
 #
 #     NO REAL PHASE 3 MODEL MAY RUN BEFORE 3C IS FROZEN (§41).
 #
@@ -42,41 +43,218 @@ models:
     role: replication
     hf_model_id: Qwen/Qwen2.5-7B-Instruct
     revision: a09a35458c702b33eeacc393d103063234e8bc28
+    # Model-specific arm ENABLED: carries the frozen Phase 2 pair and is
+    # the direct replication contrast (§20.1). Not re-calibrated.
+    model_specific_arm_enabled: true
     preferred_source: a government website
     dispreferred_source: an anonymous online forum post
+    calibration_provenance:
+      source: frozen Phase 2 pair (docs/qwen_pilot_results.md)
+      recalibrated_in_phase3: false
 
   llama:
     family: Llama-3.1-8B-Instruct
     role: replication
     hf_model_id: meta-llama/Llama-3.1-8B-Instruct
     revision: 0e9e39f249a16976918f6564b8830bc894c89659
+    # Model-specific arm ENABLED: frozen Phase 2 pair (§20.1).
+    model_specific_arm_enabled: true
     preferred_source: a government website
     dispreferred_source: a social media post
+    calibration_provenance:
+      source: frozen Phase 2 pair (docs/cross_model_pilot_results.md)
+      recalibrated_in_phase3: false
 
-  # --- approved families, UNRESOLVED until Phase 3C (§7, §20.2, §42.1) ---
-  # Phase 3C must verify and freeze: exact repository ID, exact
-  # instruction-tuned release, exact resolved commit SHA, tokenizer/model
-  # revision equality, licensing/access, float16 feasibility on the
-  # RTX-3090-class setup, no-quantization feasibility, and compatibility
-  # with the existing sequence-logprob scoring pipeline. If a family cannot
-  # satisfy these, STOP and return to researcher approval — never
-  # substitute another model silently.
-  model_c:
+  # --- approved families, RESOLVED at Phase 3C (§7, §20.2, §42.1) --------
+  # Exact releases and immutable revisions were resolved and researcher-
+  # approved in Phase 3C-1/3C-1b, and both passed unquantized float16
+  # runtime preflight on the RTX-3090-class host.
+  #
+  # BOTH new models had their model-specific arm DISABLED by the frozen §34
+  # calibration rule and proceed with the COMMON ARM ONLY. Their
+  # preferred_source/dispreferred_source stay null *by design*: the frozen
+  # rule is to run the common arm, never to force a pair. This is an
+  # informative measurement about those models, not a failure (§34), and it
+  # is recorded here BEFORE any evidence-condition outcome exists.
+  mistral:
     family: Mistral-7B-Instruct
     role: new
-    hf_model_id: null
-    revision: null
-    # Set only after that model's own Phase 3C calibration (§20.2).
+    hf_model_id: mistralai/Mistral-7B-Instruct-v0.3
+    revision: c170c708c41dac9275d15a8fff4eca08d52bab71
+    model_specific_arm_enabled: false
+    model_specific_arm_reason: >-
+      Calibration produced no defensible prespecified dispreferred source:
+      the bottom three sources tied at 2/10 and the direct low-tier
+      comparisons were 1:1, so the ordering is unstable. Forcing a pair
+      would invent a contrast the calibration does not support. Frozen
+      rule: common arm only (§20.2, §34).
     preferred_source: null
     dispreferred_source: null
+    # §36 calibration provenance. Every number and hash below is transcribed
+    # from artifacts produced on the RTX-3090 host; nothing here is
+    # recomputed, inferred, or adjusted.
+    calibration_provenance:
+      calibration_prompt_version: v2
+      # All three digests recomputed directly from the restored artifacts in
+      # phase3c3-archive/phase3c3-mistral-calibration.tar.gz, not transcribed.
+      calibration_output_sha256: 33c1665cb5ea9147807e7234aba9d7e400e5579761546682623f2d551574e7c2
+      calibration_summary_sha256: e9d7fd91ab0b42f920c603558b475565fa622a73f4c90b2b3b6ecfa8e9c99878
+      calibration_archive_sha256: 8096801deb8ba711bb8609691c47ec19f2a339f53f55a27c9e0102ecc0439090
+      parser_total_trials: 30
+      parser_valid_trials: 30
+      malformed_trials: 0
+      stable_pairs: 12
+      order_reversal_pairs: 3
+      parser_relaxed: false
+      rerun_performed: false
+      runtime_preflight: passed fp16 unquantized on RTX 3090
+      # Mean pairwise preference rate per source, copied from the artifact's
+      # own `pilot_heuristic_ranking`. Recorded as measured evidence; it is
+      # explicitly NOT a pair selection. The bottom three tie at 0.20 and
+      # their direct comparisons are 1:1, which is exactly why no
+      # dispreferred source can be prespecified.
+      heuristic_source_ranking:
+        - source: a government website
+          wins: 10
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 1.0
+        - source: a news article
+          wins: 8
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 0.8
+        - source: Wikipedia
+          wins: 6
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 0.6
+        - source: a personal blog
+          wins: 2
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 0.2
+        - source: a social media post
+          wins: 2
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 0.2
+        - source: an anonymous online forum post
+          wins: 2
+          total_valid_trials: 10
+          mean_pairwise_preference_rate: 0.2
+      decision: NO_MODEL_SPECIFIC_PAIR
+      decision_reason: >-
+        NO model-specific pair. Mistral proceeds common-arm only because the
+        measured top source was "a government website", but the three
+        least-preferred sources tied and their direct comparisons were
+        order-unstable, so choosing one as the dispreferred source would
+        require an unprespecified post-hoc tie-break.
+      # All 15 unordered pairs from the six frozen labels in
+      # configs/sources.yaml, each presented in both AB and BA order (§20.2).
+      # a_wins + b_wins == 2 for every pair; the 3 pairs split 1-1 are the
+      # order reversals recorded above.
+      preference_matrix:
+        - source_a: Wikipedia
+          source_b: a personal blog
+          a_wins: 2
+          b_wins: 0
+        - source_a: Wikipedia
+          source_b: a government website
+          a_wins: 0
+          b_wins: 2
+        - source_a: Wikipedia
+          source_b: a news article
+          a_wins: 0
+          b_wins: 2
+        - source_a: Wikipedia
+          source_b: a social media post
+          a_wins: 2
+          b_wins: 0
+        - source_a: Wikipedia
+          source_b: an anonymous online forum post
+          a_wins: 2
+          b_wins: 0
+        - source_a: a personal blog
+          source_b: a government website
+          a_wins: 0
+          b_wins: 2
+        - source_a: a personal blog
+          source_b: a news article
+          a_wins: 0
+          b_wins: 2
+        - source_a: a personal blog
+          source_b: a social media post
+          a_wins: 1
+          b_wins: 1
+        - source_a: a personal blog
+          source_b: an anonymous online forum post
+          a_wins: 1
+          b_wins: 1
+        - source_a: a government website
+          source_b: a news article
+          a_wins: 2
+          b_wins: 0
+        - source_a: a government website
+          source_b: a social media post
+          a_wins: 2
+          b_wins: 0
+        - source_a: a government website
+          source_b: an anonymous online forum post
+          a_wins: 2
+          b_wins: 0
+        - source_a: a news article
+          source_b: a social media post
+          a_wins: 2
+          b_wins: 0
+        - source_a: a news article
+          source_b: an anonymous online forum post
+          a_wins: 2
+          b_wins: 0
+        - source_a: a social media post
+          source_b: an anonymous online forum post
+          a_wins: 1
+          b_wins: 1
 
-  model_d:
+  gemma:
     family: Gemma-2-9B-it
     role: new
-    hf_model_id: null
-    revision: null
+    hf_model_id: google/gemma-2-9b-it
+    revision: 11c9b309abf73637e4b6f9a3fa1e92e615547819
+    model_specific_arm_enabled: false
+    model_specific_arm_reason: >-
+      Calibration produced 0/30 parser-valid outputs under the frozen strict
+      `^Choice:\s*([12])\s*$` parser; raw generations were bare "1"/"2".
+      No parser relaxation and no rerun were used, so no preference matrix
+      exists and no pair can be selected. Frozen rule: common arm only
+      (§20.2, §34).
     preferred_source: null
     dispreferred_source: null
+    # §36 calibration provenance. All three digests recomputed directly from
+    # the restored artifacts in
+    # phase3c3-archive/phase3c3-gemma-calibration.tar.gz.
+    calibration_provenance:
+      calibration_prompt_version: v2
+      calibration_output_sha256: f65188136221392503333b14c2e0ca68b9ceab38cdd696ed990fa81dbc1d9da6
+      calibration_summary_sha256: 522ba7867c0424cd71e67b5ae751504e16840d9979d02c2c7da019c82e9005ef
+      calibration_archive_sha256: 6db306ec402f8491c0744b8294051e02f0946769f5fd3a6113df5dec68203d85
+      parser_total_trials: 30
+      parser_valid_trials: 0
+      malformed_trials: 30
+      # All 15 pairs malformed, so no pair yielded a usable comparison and
+      # both stability counts are 0 out of 0 measured pairs -- not 0 out of 15
+      # measured pairs, which would imply 15 measured ties.
+      malformed_pairs: 15
+      stable_pairs: 0
+      order_reversal_pairs: 0
+      parser_relaxed: false
+      rerun_performed: false
+      malformed_pattern: 'bare "1"/"2" without the required "Choice:" prefix'
+      runtime_preflight: passed fp16 unquantized on RTX 3090
+      decision: NO_MODEL_SPECIFIC_PAIR
+      decision_reason: >-
+        NO model-specific pair. Gemma proceeds common-arm only because all 30
+        frozen calibration outputs were malformed under the frozen strict
+        parser. No parser relaxation, prompt change, or rerun was used.
+      # EXPLICITLY null, not absent and not an empty matrix: with 0/30
+      # parser-valid presentations there is nothing to build a matrix from,
+      # and an empty one would read as "measured, all ties" (§20.2, §34).
+      preference_matrix: null
 
 # Blockwise pre-outcome screening (§11). Stopping may use baseline/
 # eligibility supply only — never any Phase 3 outcome.

@@ -20,6 +20,13 @@ Rejecting the first while still accepting the second is the whole point.
 from __future__ import annotations
 
 import pytest
+from test_phase3_config_and_gate import (  # shared §36 fixture provenance
+    ARTIFACT_HASHES_36,
+    DATASET_36,
+    ENVIRONMENT_36,
+    HARDWARE_36,
+    model_provenance_36,
+)
 
 from conflict_eval.phase3.config import load_phase3_config
 from conflict_eval.phase3.constants import (
@@ -84,11 +91,19 @@ def _design_manifest(
     return build_manifest(
         seed=42,
         repository_commit="d684f39",
-        dataset={"hf_dataset_id": "akariasai/PopQA", "revision": "0" * 40},
+        dataset=dict(DATASET_36),
+        artifact_hashes=dict(ARTIFACT_HASHES_36),
+        environment=dict(ENVIRONMENT_36),
+        hardware=dict(HARDWARE_36),
         models={
             "qwen": {
                 "hf_model_id": "Qwen/Qwen2.5-7B-Instruct",
                 "revision": FROZEN_MODEL_REVISIONS["qwen"]["revision"],
+                "model_specific_arm_enabled": True,
+                "preferred_source": "a government website",
+                "dispreferred_source": "an anonymous online forum post",
+                "condition_set": ["C0", "K1", "K2", "K3", "K4", "M1", "M2"],
+                **model_provenance_36(),
             }
         },
         prompt_version="v1",

@@ -19,14 +19,27 @@ the flag is not self-certifying.
 from __future__ import annotations
 
 import dataclasses
+from typing import Any
 
 from conflict_eval.phase3.config import Phase3Config
 from conflict_eval.phase3.constants import PHASE2_QWEN_KW_ITEM_COUNT
-from conflict_eval.phase3.manifest import _frozen_design_problems
+from conflict_eval.phase3.manifest import Phase3Manifest, validate_manifest
 
 
 class Phase3NotReadyError(RuntimeError):
     """Raised when a real Phase 3 run is attempted before 3C is frozen."""
+
+
+def _as_manifest(manifest: Any) -> Phase3Manifest:
+    """Accept either a raw manifest mapping or a `Phase3Manifest`.
+
+    The gate's public signature takes a plain dict, but `validate_manifest`
+    owns the rules and works on the wrapper, so normalize here rather than
+    duplicating any rule.
+    """
+    if isinstance(manifest, Phase3Manifest):
+        return manifest
+    return Phase3Manifest(data=manifest)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -59,11 +72,32 @@ def check_readiness(
             f"{unresolved_models} (Phase 3C must resolve and freeze these; §7, §42.1)"
         )
 
+    # UNRESOLVED arm state still blocks. A model whose arm was explicitly
+    # DISABLED under the frozen §34 calibration rule does NOT block: running
+    # the common arm only is a legitimate pre-specified state, provided the
+    # reason and calibration provenance are recorded (enforced by the config
+    # loader, so a not-yet-calibrated model can never reach this point
+    # disguised as a deliberate common-arm-only model).
     unresolved_roles = config.unresolved_source_roles()
     if unresolved_roles:
         blockers.append(
-            "model-specific source roles (M1/M2) unresolved for: "
-            f"{unresolved_roles} (new models require Phase 3C calibration; §20.2)"
+            "model-specific arm state unresolved for: "
+            f"{unresolved_roles} (each model must either enable the arm with "
+            "both source roles, or explicitly disable it under the frozen §34 "
+            "calibration rule with a recorded reason; §20.2, §34)"
+        )
+
+    # §36 requires each NEW model's calibration output SHA256, preference
+    # matrix and stated reason INSIDE the pre-run freeze manifest. An
+    # incomplete record blocks; it is never silently accepted, and a missing
+    # artifact hash is named field-by-field so nobody is tempted to invent
+    # one to clear the gate.
+    for model_key, missing in sorted(config.calibration_provenance_gaps().items()):
+        blockers.append(
+            f"calibration provenance for new model {model_key!r} is missing "
+            f"{missing}; §36 requires the calibration output SHA256, preference "
+            "matrix and the researcher's stated reason before the freeze is "
+            "sealed (§20.2, §36)"
         )
 
     dataset_revision = (config.dataset or {}).get("revision")
@@ -79,10 +113,20 @@ def check_readiness(
     if manifest is None:
         blockers.append("no pre-run freeze manifest supplied (§36)")
     else:
-        # Defense in depth: the gate re-derives the frozen-design check
-        # rather than trusting that a caller ran validate_manifest first.
-        # Same helper, so the rule has one source of truth.
-        blockers.extend(_frozen_design_problems(manifest))
+        # ONE authoritative manifest-validation path. The gate delegates to
+        # the full `validate_manifest`, so "the gate passed" can never mean
+        # something weaker than "the manifest is valid". Previously the gate
+        # re-derived only `_frozen_design_problems`, which meant two
+        # different definitions of a valid manifest could disagree.
+        #
+        # The config's model keys are always supplied here, so the §36
+        # every-model invariant is enforced on the path that actually
+        # authorizes a run.
+        blockers.extend(
+            validate_manifest(
+                _as_manifest(manifest), expected_model_keys=sorted(config.models)
+            )
+        )
         if not manifest.get("frozen"):
             blockers.append("freeze manifest is not marked frozen (§36)")
         if manifest.get("synthetic"):
