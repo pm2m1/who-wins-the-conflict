@@ -5,9 +5,18 @@ Implements the frozen protocol in `docs/phase3_scaled_study_design.md`
 historical, pre-result material: this package implements it, and must
 never be used to reinterpret or amend it.
 
-**No module in this package loads a real model, contacts the Hugging Face
-Hub, or downloads a dataset.** Phase 3B is implementation plus synthetic
-validation only; the frozen design forbids any real Phase 3 model run
-before the Phase 3C pre-run freeze (`docs/phase3_scaled_study_design.md`,
-§41). `real_run_gate.py` enforces that programmatically.
+**Exactly two modules in this package touch the outside world**, and both
+are Phase 3C screening machinery:
+
+- `baseline_runner.py` executes the outcome-blind baseline measurement
+  (§11), which §41 places in Phase 3C because its output is a design
+  input for cohort construction, not an outcome;
+- `cli.py`'s `prepare-data` downloads the pinned PopQA revision (§8).
+
+Everything else is offline. **No module in this package can generate a
+Phase 3 evidence condition.** `C0`/`K1`-`K4`/`M1`/`M2` generation is
+Phase 3D work and remains forbidden until the pre-run manifest is sealed
+(§41); `real_run_gate.py` enforces that programmatically, and
+`baseline_runner.assert_no_evidence_machinery_imported()` asserts that the
+screening path holds no reference to the condition builders.
 """
