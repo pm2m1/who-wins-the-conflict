@@ -1,17 +1,28 @@
-"""Phase 3C command-line entrypoints.
+"""Phase 3C/3D command-line entrypoints.
 
 Separate from `conflict_eval.cli` on purpose: that module is frozen Phase 2
-historical code and is not modified. These commands drive Phase 3C only.
+historical code and is not modified.
+
+Phase 3C -- construct and seal the frozen study state::
 
     python -m conflict_eval.phase3 prepare-data
     python -m conflict_eval.phase3 screen --model qwen
     python -m conflict_eval.phase3 verify-return --root ../phase3c-cloud-return
     python -m conflict_eval.phase3 extract-exclusions --artifact <phase2.jsonl>
+    python -m conflict_eval.phase3 build-freeze --return-root <pkg> --seal
     python -m conflict_eval.phase3 gate
 
-`screen` is the ONLY command that loads a model, and it runs the
-outcome-blind baseline measurement only (§11, §41). No command here can
-generate a C0/K/M evidence condition.
+Phase 3D -- run exactly what 3C sealed::
+
+    python -m conflict_eval.phase3 build-run-plan
+    python -m conflict_eval.phase3 run-evidence --model qwen
+    python -m conflict_eval.phase3 verify-evidence-return --root <pkg>
+
+Exactly two commands load a model, and each does one thing. `screen` runs
+the outcome-blind baseline measurement only (§11, §41). `run-evidence` runs
+the sealed evidence conditions and selects nothing -- every generation it
+performs was fixed by the Phase 3C freeze, and it refuses to start if that
+freeze has drifted.
 """
 
 from __future__ import annotations
@@ -45,6 +56,7 @@ from conflict_eval.phase3.real_run_gate import check_readiness
 from conflict_eval.phase3.runtime_capture import sha256_file
 
 DEFAULT_CONFIG = "configs/phase3/phase3_study.yaml"
+DEFAULT_MANIFEST = "configs/phase3/freeze/phase3c_pre_run_manifest.json"
 INTERIM_NAME = "popqa_interim.jsonl"
 CANDIDATES_NAME = "popqa_phase3_candidates.jsonl"
 
@@ -437,6 +449,201 @@ def _combined_stop_reason(derived_by_model: dict[str, dict]) -> str:
     return reasons.pop() if len(reasons) == 1 else "mixed:" + ",".join(sorted(reasons))
 
 
+def _load_freeze(config_path: str, manifest_path: str):
+    """Load the config and sealed manifest, refusing a drifted freeze."""
+    from conflict_eval.phase3.evidence_run import assert_freeze_intact
+
+    config = load_phase3_config(config_path)
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    assert_freeze_intact(config, manifest, config_path=config_path)
+    return config, manifest, sha256_file(manifest_path)
+
+
+def cmd_build_run_plan(
+    config_path: str, manifest_path: str, derived_dir: str, out_path: str
+) -> int:
+    """Materialize the sealed trial spec + dedup map into executable form.
+
+    Selects nothing and decides nothing: every generation in the output was
+    already fixed by the Phase 3C freeze. No model is loaded.
+    """
+    from conflict_eval.phase3 import evidence_run as er
+    from conflict_eval.phase3 import freeze_build as fb
+
+    config, manifest, manifest_sha = _load_freeze(config_path, manifest_path)
+    derived = Path(derived_dir)
+
+    trial_rows = [
+        json.loads(line)
+        for line in (derived / "trial_specification.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip()
+    ]
+    trial_sha = sha256_file(derived / "trial_specification.jsonl")
+    recorded = manifest["artifact_hashes"]["trial_file"]
+    if trial_sha != recorded:
+        raise SystemExit(
+            f"EMPIRICAL_ARTIFACT_INTEGRITY_FAILURE: trial specification hashes to "
+            f"{trial_sha}, sealed manifest records {recorded}."
+        )
+    observations = json.loads(
+        (derived / "dedup_observations.json").read_text(encoding="utf-8")
+    )
+    obs_sha = sha256_file(derived / "dedup_observations.json")
+    recorded_obs = manifest["deduplication_provenance"]["observations_file_sha256"]
+    if obs_sha != recorded_obs:
+        raise SystemExit(
+            f"EMPIRICAL_ARTIFACT_INTEGRITY_FAILURE: deduplication observations hash "
+            f"to {obs_sha}, sealed manifest records {recorded_obs}."
+        )
+
+    baseline_by_model: dict[str, dict[str, dict]] = {}
+    for key in sorted(config.models):
+        path = derived / key / "baseline_records.jsonl"
+        digest = sha256_file(path)
+        expected = manifest["models"][key]["baseline_file_sha256"]
+        if digest != expected:
+            raise SystemExit(
+                f"EMPIRICAL_ARTIFACT_INTEGRITY_FAILURE: {key} baseline records hash "
+                f"to {digest}, sealed manifest records {expected}."
+            )
+        baseline_by_model[key] = {
+            str(r["item_id"]): r
+            for r in (
+                json.loads(line)
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+        }
+
+    prompts_config = load_prompts_config(config.prompts_config)
+    plan = er.build_run_plan(
+        manifest=manifest,
+        trial_rows=trial_rows,
+        observations=observations,
+        baseline_by_model=baseline_by_model,
+        baseline_template=Path(prompts_config["baseline"]["template"]).read_text(
+            encoding="utf-8"
+        ),
+        evidence_template=Path(prompts_config["evidence"]["template"]).read_text(
+            encoding="utf-8"
+        ),
+    )
+    plan_path, plan_sha = fb.write_jsonl(out_path, plan)
+
+    per_model: dict[str, int] = {}
+    aliased = 0
+    for row in plan:
+        per_model[row["model_key"]] = per_model.get(row["model_key"], 0) + 1
+        aliased += bool(row["is_aliased"])
+    index_path, _ = fb.write_json(
+        Path(out_path).with_name("phase3d_run_plan_index.json"),
+        {
+            "phase": "3D",
+            "freeze_manifest_sha256": manifest_sha,
+            "trial_file_sha256": trial_sha,
+            "dedup_observations_sha256": obs_sha,
+            "run_plan_sha256": plan_sha,
+            "planned_generations": len(plan),
+            "per_model": per_model,
+            "aliased_observations": aliased,
+            "nominal_condition_slots": manifest["compute"]["nominal_condition_slots"],
+            "observation_ids": {
+                key: [r["observation_id"] for r in plan if r["model_key"] == key]
+                for key in sorted(per_model)
+            },
+        },
+    )
+    print(
+        f"build-run-plan: {len(plan)} planned generations "
+        f"({aliased} aliased observations) from "
+        f"{manifest['compute']['nominal_condition_slots']} nominal condition slots\n"
+        f"  per model: {per_model}\n"
+        f"  plan:  {plan_path} (sha256 {plan_sha})\n"
+        f"  index: {index_path}\n"
+        f"  freeze manifest sha256: {manifest_sha}"
+    )
+    return 0
+
+
+def cmd_run_evidence(
+    model_key: str,
+    config_path: str,
+    manifest_path: str,
+    plan_path: str,
+    allow_cpu: bool,
+) -> int:
+    """Generate one model's planned Phase 3D evidence conditions."""
+    from conflict_eval.phase3 import evidence_run as er
+
+    config, manifest, manifest_sha = _load_freeze(config_path, manifest_path)
+    entry = config.model(model_key)
+    plan = [
+        json.loads(line)
+        for line in Path(plan_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    plan_sha = sha256_file(plan_path)
+    er.assert_run_plan_matches_manifest(plan, manifest)
+
+    models_config = load_models_config("configs/models.yaml")
+    result = er.run_evidence_generations(
+        model_key=model_key,
+        plan_rows=plan,
+        results_dir=Path(config.paths["results_dir"]).parent / "evidence",
+        adapter_factory=_adapter_factory(entry, models_config),
+        gen_config=GenerationConfig(**models_config.generation),
+        manifest_sha256=manifest_sha,
+        run_plan_sha256=plan_sha,
+        expected_model_id=entry.hf_model_id,
+        expected_revision=entry.revision,
+        require_cuda=not allow_cpu,
+    )
+    print(
+        f"run-evidence[{model_key}]: {result.generated_total} generated, "
+        f"{result.resumed_total} resumed, {result.blocks_completed} blocks\n"
+        f"  summary: {result.summary_path} (sha256 {result.summary_sha256})"
+    )
+    return 0
+
+
+def cmd_verify_evidence_return(
+    root: str, config_path: str, manifest_path: str, index_path: str
+) -> int:
+    """Verify returned Phase 3D artifacts against the sealed freeze."""
+    from conflict_eval.phase3.artifact_verification import verify_evidence_artifacts
+
+    config, _manifest, manifest_sha = _load_freeze(config_path, manifest_path)
+    index = json.loads(Path(index_path).read_text(encoding="utf-8"))
+    failures = verify_checksums_file(root)
+    for line in failures:
+        print(line)
+    ok = not failures
+    for key in sorted(config.models):
+        entry = config.model(key)
+        report = verify_evidence_artifacts(
+            root,
+            key,
+            expected_model_id=entry.hf_model_id,
+            expected_revision=entry.revision,
+            expected_manifest_sha256=index["freeze_manifest_sha256"],
+            expected_run_plan_sha256=index["run_plan_sha256"],
+            expected_count=index["per_model"][key],
+            expected_observation_ids=index["observation_ids"][key],
+        )
+        print(report.describe())
+        ok = ok and report.ok
+    if index["freeze_manifest_sha256"] != manifest_sha:
+        print(
+            f"RUNTIME_REPRODUCIBILITY_FAILURE: run-plan index cites freeze manifest "
+            f"{index['freeze_manifest_sha256']}, local manifest is {manifest_sha}"
+        )
+        ok = False
+    print("\nVERIFIED" if ok else "\nVERIFICATION FAILED")
+    return 0 if ok else 1
+
+
 def cmd_gate(config_path: str, manifest_path: str | None) -> int:
     config = load_phase3_config(config_path)
     manifest = None
@@ -487,6 +694,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Mark the manifest frozen; only at the Phase 3C freeze point (§36).",
     )
 
+    p = sub.add_parser(
+        "build-run-plan", help="Phase 3D: materialize the sealed trial specification."
+    )
+    p.add_argument("--manifest", default=DEFAULT_MANIFEST)
+    p.add_argument("--derived-dir", default="runs/phase3/derived")
+    p.add_argument("--out", default="runs/phase3/evidence/phase3d_run_plan.jsonl")
+
+    p = sub.add_parser(
+        "run-evidence", help="Phase 3D: generate planned evidence conditions (loads a model)."
+    )
+    p.add_argument("--model", required=True, choices=["qwen", "llama", "mistral", "gemma"])
+    p.add_argument("--manifest", default=DEFAULT_MANIFEST)
+    p.add_argument("--plan", default="runs/phase3/evidence/phase3d_run_plan.jsonl")
+    p.add_argument(
+        "--allow-cpu",
+        action="store_true",
+        help="Debug only; the frozen runtime is unquantized float16 on GPU.",
+    )
+
+    p = sub.add_parser(
+        "verify-evidence-return", help="Phase 3D: verify returned evidence artifacts."
+    )
+    p.add_argument("--root", required=True)
+    p.add_argument("--manifest", default=DEFAULT_MANIFEST)
+    p.add_argument("--index", default="runs/phase3/evidence/phase3d_run_plan_index.json")
+
     p = sub.add_parser("gate", help="Report Phase 3C real-run readiness.")
     p.add_argument("--manifest", default=None)
     return parser
@@ -509,6 +742,18 @@ def main(argv: list[str] | None = None) -> int:
             args.derived_dir,
             args.freeze_dir,
             args.seal,
+        )
+    if args.command == "build-run-plan":
+        return cmd_build_run_plan(
+            args.config, args.manifest, args.derived_dir, args.out
+        )
+    if args.command == "run-evidence":
+        return cmd_run_evidence(
+            args.model, args.config, args.manifest, args.plan, args.allow_cpu
+        )
+    if args.command == "verify-evidence-return":
+        return cmd_verify_evidence_return(
+            args.root, args.config, args.manifest, args.index
         )
     if args.command == "gate":
         return cmd_gate(args.config, args.manifest)

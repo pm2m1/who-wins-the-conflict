@@ -30,7 +30,7 @@ from conflict_eval.phase3.constants import (
     SCREENING_BLOCK_SIZE,
     SCREENING_CEILING_PER_MODEL,
 )
-from conflict_eval.phase3.runtime_capture import sha256_file
+from conflict_eval.phase3.runtime_capture import sha256_file, sha256_text
 
 INTEGRITY_FAILURE = "EMPIRICAL_ARTIFACT_INTEGRITY_FAILURE"
 REPRODUCIBILITY_FAILURE = "RUNTIME_REPRODUCIBILITY_FAILURE"
@@ -240,6 +240,187 @@ def verify_model_artifacts(
         failures=tuple(failures),
         blocks=len(seen),
         records=records_total,
+        resolved_revision=resolved,
+    )
+
+
+def verify_evidence_artifacts(
+    root: str | Path,
+    model_key: str,
+    *,
+    expected_model_id: str,
+    expected_revision: str,
+    expected_manifest_sha256: str,
+    expected_run_plan_sha256: str,
+    expected_count: int,
+    expected_observation_ids: list[str] | None = None,
+    expected_dtype: str = "float16",
+    require_cuda: bool = True,
+) -> VerificationReport:
+    """Verify one model's returned **Phase 3D** evidence artifacts.
+
+    Deliberately separate from `verify_model_artifacts`. That function
+    refuses any artifact carrying an evidence-condition field, because a
+    Phase 3C screening record must be outcome-blind. A Phase 3D record is
+    the opposite: `context_adopted` is the primary outcome and its absence
+    would be the defect. Keeping the two checks apart means neither can be
+    pointed at the wrong stage and quietly pass.
+
+    What is verified here is that the returned outcomes were produced under
+    the sealed freeze: the right model at the right revision, from the right
+    manifest and the right run plan, covering exactly the planned
+    observations with no gap, duplicate or extra.
+    """
+    failures: list[str] = []
+    block_dir = Path(root) / model_key / "blocks"
+    if not block_dir.is_dir():
+        return VerificationReport(
+            model_key, False, (f"{INTEGRITY_FAILURE}: {block_dir} missing",), 0, 0, None
+        )
+
+    metas = sorted(block_dir.glob("block_*.meta.json"))
+    if not metas:
+        failures.append(f"{INTEGRITY_FAILURE}: no completed blocks for {model_key!r}")
+
+    seen: dict[int, dict[str, Any]] = {}
+    observation_ids: list[str] = []
+    resolved: str | None = None
+
+    for meta_path in metas:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        index = meta.get("block_index")
+        if index in seen:
+            failures.append(f"{INTEGRITY_FAILURE}: duplicate block index {index}")
+            continue
+        seen[index] = meta
+
+        data_path = meta_path.with_name(meta_path.name.replace(".meta.json", ".jsonl"))
+        if not data_path.exists():
+            failures.append(f"{INTEGRITY_FAILURE}: block {index} data file missing")
+            continue
+        actual = sha256_file(data_path)
+        if actual != meta.get("sha256"):
+            failures.append(
+                f"{INTEGRITY_FAILURE}: block {index} digest {actual} != recorded "
+                f"{meta.get('sha256')}"
+            )
+        if meta.get("phase") != "3D":
+            failures.append(
+                f"{INTEGRITY_FAILURE}: block {index} is not marked phase 3D "
+                f"(got {meta.get('phase')!r})"
+            )
+        if meta.get("freeze_manifest_sha256") != expected_manifest_sha256:
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} was produced under freeze "
+                f"manifest {meta.get('freeze_manifest_sha256')}, expected "
+                f"{expected_manifest_sha256}"
+            )
+        if meta.get("run_plan_sha256") != expected_run_plan_sha256:
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} was produced from run plan "
+                f"{meta.get('run_plan_sha256')}, expected {expected_run_plan_sha256}"
+            )
+        if meta.get("model_key") != model_key:
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} records model_key "
+                f"{meta.get('model_key')!r}, expected {model_key!r}"
+            )
+        if meta.get("model_id") != expected_model_id:
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} model_id "
+                f"{meta.get('model_id')!r} != frozen {expected_model_id!r}"
+            )
+        for field in ("requested_revision", "resolved_revision"):
+            if meta.get(field) != expected_revision:
+                failures.append(
+                    f"{REPRODUCIBILITY_FAILURE}: block {index} {field} "
+                    f"{meta.get(field)!r} != frozen {expected_revision!r}"
+                )
+        if resolved is None:
+            resolved = meta.get("resolved_revision")
+        elif meta.get("resolved_revision") != resolved:
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} resolved_revision differs "
+                "from earlier blocks; artifacts from different loads must not mix"
+            )
+        if str(meta.get("dtype", "")).lower() not in ("float16", "fp16"):
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} dtype {meta.get('dtype')!r} "
+                f"!= {expected_dtype!r}"
+            )
+        if str(meta.get("quantization", "")).lower() not in ("none", "false"):
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} quantization "
+                f"{meta.get('quantization')!r}; Phase 3 runs unquantized"
+            )
+        if require_cuda and not (meta.get("hardware") or {}).get("cuda_available"):
+            failures.append(
+                f"{REPRODUCIBILITY_FAILURE}: block {index} was not produced under CUDA"
+            )
+
+        for raw in data_path.read_text(encoding="utf-8").splitlines():
+            if not raw.strip():
+                continue
+            record = json.loads(raw)
+            observation_ids.append(record.get("observation_id"))
+            # The primary outcome must be present and boolean. A missing or
+            # non-boolean value is not "no effect" -- it is an unscored
+            # generation, and pooling it with real zeros would be a fiction.
+            if not isinstance(record.get("context_adopted"), bool):
+                failures.append(
+                    f"{INTEGRITY_FAILURE}: block {index} record "
+                    f"{record.get('observation_id')!r} has non-boolean "
+                    f"context_adopted {record.get('context_adopted')!r} (§24)"
+                )
+                break
+            if record.get("prompt_sha256") != sha256_text(record.get("prompt") or ""):
+                failures.append(
+                    f"{INTEGRITY_FAILURE}: block {index} record "
+                    f"{record.get('observation_id')!r} carries a prompt that does not "
+                    "match its recorded digest"
+                )
+                break
+
+    if seen:
+        missing = sorted(set(range(max(seen) + 1)) - set(seen))
+        if missing:
+            failures.append(
+                f"{INTEGRITY_FAILURE}: block sequence is not contiguous; missing {missing}"
+            )
+
+    if len(observation_ids) != expected_count:
+        failures.append(
+            f"{INTEGRITY_FAILURE}: {len(observation_ids)} generations returned for "
+            f"{model_key!r}, the sealed freeze planned {expected_count}"
+        )
+    duplicates = len(observation_ids) - len(set(observation_ids))
+    if duplicates:
+        failures.append(
+            f"{INTEGRITY_FAILURE}: {duplicates} duplicate observation id(s) returned "
+            f"for {model_key!r}; each canonical observation is generated once (§22)"
+        )
+    if expected_observation_ids is not None:
+        expected_set = set(expected_observation_ids)
+        returned_set = set(observation_ids)
+        unplanned = sorted(returned_set - expected_set)
+        absent = sorted(expected_set - returned_set)
+        if unplanned:
+            failures.append(
+                f"{INTEGRITY_FAILURE}: {len(unplanned)} returned observation(s) are "
+                f"not in the sealed run plan, e.g. {unplanned[:3]}"
+            )
+        if absent:
+            failures.append(
+                f"{INTEGRITY_FAILURE}: {len(absent)} planned observation(s) were not "
+                f"returned, e.g. {absent[:3]}"
+            )
+
+    return VerificationReport(
+        model_key=model_key,
+        ok=not failures,
+        failures=tuple(failures),
+        blocks=len(seen),
+        records=len(observation_ids),
         resolved_revision=resolved,
     )
 
