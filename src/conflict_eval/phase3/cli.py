@@ -644,6 +644,73 @@ def cmd_verify_evidence_return(
     return 0 if ok else 1
 
 
+def cmd_analyze_3e(
+    config_path: str, manifest_path: str, root: str, out_dir: str
+) -> int:
+    """Run the preregistered Phase 3E analysis over verified observations.
+
+    Loads no model and changes no frozen input. The set of analyses comes
+    from the sealed registry; this command only executes them.
+    """
+    from conflict_eval.phase3 import analysis_3e as a3e
+    from conflict_eval.phase3 import freeze_build as fb
+
+    _config, manifest, manifest_sha = _load_freeze(config_path, manifest_path)
+    registry = json.loads(
+        Path("configs/phase3/freeze/analysis_status.json").read_text(encoding="utf-8")
+    )
+    records = a3e.load_observations(root)
+    tables = a3e.build_phase3e_tables(
+        manifest=manifest, registry=registry, records=records
+    )
+    tables["provenance"] = {
+        "phase": "3E",
+        "freeze_manifest_sha256": manifest_sha,
+        "observations_analyzed": len(records),
+        "observation_root": str(root),
+        "alpha": a3e.ALPHA,
+        "procedures": {
+            "effect": "paired risk difference",
+            "interval": "95% Tango matched-pair score interval",
+            "test": "exact two-sided McNemar / exact binomial on discordant pairs",
+            "multiplicity": "Holm-Bonferroni within the secondary family only",
+        },
+    }
+    out = Path(out_dir)
+    paths = {
+        "phase3e_results.json": tables,
+        "phase3e_primary.json": {
+            "primary": tables["primary"],
+            "replication_classification": tables["replication_classification"],
+        },
+        "phase3e_secondary_family.json": tables["secondary_family"],
+        "phase3e_cohort_status.json": tables["cohort_status"],
+        "phase3e_diagnostics.json": tables["diagnostics"],
+    }
+    written = {}
+    for name, payload in paths.items():
+        path, digest = fb.write_json(out / name, payload)
+        written[name] = digest
+        print(f"  {path} (sha256 {digest})")
+
+    primary = tables["primary"]
+    classification = tables["replication_classification"]
+    family = tables["secondary_family"]
+    print(
+        f"\nPRIMARY (Cohort A, Qwen, KW corrective, frozen pair)\n"
+        f"  n={primary['n']}  both={primary['both']} "
+        f"A-only={primary['a_only']} B-only={primary['b_only']} "
+        f"neither={primary['neither']}  discordant={primary['discordant_pairs']}\n"
+        f"  Delta={primary['risk_difference']:+.4f}  "
+        f"95% Tango CI=[{primary['ci_lower']:+.4f}, {primary['ci_upper']:+.4f}]  "
+        f"exact p={primary['exact_p']:.6g}\n"
+        f"  CLASSIFICATION: {classification['category']}\n"
+        f"\nSecondary family: {family['family_size']} tests, "
+        f"{len(family['significant_after_holm'])} significant after Holm"
+    )
+    return 0
+
+
 def cmd_gate(config_path: str, manifest_path: str | None) -> int:
     config = load_phase3_config(config_path)
     manifest = None
@@ -720,6 +787,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--manifest", default=DEFAULT_MANIFEST)
     p.add_argument("--index", default="runs/phase3/evidence/phase3d_run_plan_index.json")
 
+    p = sub.add_parser(
+        "analyze-3e", help="Phase 3E: run the preregistered analysis."
+    )
+    p.add_argument("--root", required=True)
+    p.add_argument("--manifest", default=DEFAULT_MANIFEST)
+    p.add_argument("--out-dir", default="runs/phase3/analysis")
+
     p = sub.add_parser("gate", help="Report Phase 3C real-run readiness.")
     p.add_argument("--manifest", default=None)
     return parser
@@ -755,6 +829,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_verify_evidence_return(
             args.root, args.config, args.manifest, args.index
         )
+    if args.command == "analyze-3e":
+        return cmd_analyze_3e(args.config, args.manifest, args.root, args.out_dir)
     if args.command == "gate":
         return cmd_gate(args.config, args.manifest)
     raise SystemExit(f"unknown command {args.command!r}")
