@@ -1183,3 +1183,80 @@ choice remains a pending researcher decision (see "Repository license —
 pending researcher decision" above). A read-only scan of tracked files for
 credential-like patterns (`hf_`, `ghp_`, `sk-`, private-key markers, AWS
 key patterns, etc.) found nothing.
+
+## Two Phase 3E classifier corrections (2026-08-24)
+
+Both were made **during** Phase 3E implementation, before any result was
+reported, and both are corrections to code that had misread an already
+frozen rule. Neither changes a rule, a threshold, a cohort, or any
+observation. They are recorded here because §36 requires any change after
+the freeze to be documented and shown not to be outcome-driven.
+
+### 1. A Holm-failing positive result is not a NON-REPLICATION
+
+The first implementation of `classify_secondary` treated failure to
+survive Holm correction as sufficient for a NON-REPLICATION verdict. The
+frozen text does not say that. §37 defines the categories as:
+
+> **NON-REPLICATION** — (f) not saturated **and** discordant pairs ≥ 5
+> (i.e. the test was genuinely informative), **and** either `Delta` ≤ 0, or
+> the 95% interval includes 0.
+
+and separately says only that a secondary test
+
+> must additionally survive Holm correction within the secondary family
+> (§28) to be classified as FULL CONFIRMATORY REPLICATION.
+
+So Holm survival is a **precondition for the positive verdict**, not a
+trigger for the negative one. Conflating the two would have manufactured
+negative findings the design never defined, for contrasts that are
+positive with an interval excluding zero. The corrected code emits a
+distinct label, `DIRECTIONAL EFFECT, NOT MULTIPLICITY-SURVIVING`, for
+exactly that state. Pinned by
+`tests/test_phase3_analysis_3e.py::test_failing_holm_does_not_manufacture_a_non_replication`.
+
+Three contrasts land in this state, and under the erroneous version all
+three would have been reported as non-replications: Cohort C Qwen
+model-specific, Gemma common fixed-source, and the model-specific cohort
+restriction.
+
+### 2. A `counted_once_with` row is not a failed test
+
+Qwen's common-arm contrast rests on the *same observations* as the primary
+test, because Qwen's frozen Phase 2 pair is the common pair (§19) and its
+`M1`/`M2` prompts are therefore byte-identical to `K1`/`K2` (§22). The
+registry marks it `counted_once_with` and excludes it from the Holm
+family, so it has no adjusted p-value. The first implementation read that
+absent p-value as "did not survive correction" and labelled the row a
+NON-REPLICATION.
+
+A row that is deliberately not an independent test cannot pass or fail
+one. The corrected code returns `COUNTED ONCE (shared observations)` and
+restates that it must never be presented as corroboration of the result it
+shares observations with (§26.1, §28). Pinned by
+`tests/test_phase3_analysis_3e.py::test_a_counted_once_row_is_not_treated_as_a_failed_test`.
+
+### Why neither is outcome-driven
+
+Both corrections were identified by reading the frozen §37 text against
+the code, not by inspecting p-values, and both make the classification
+*less* likely to report a negative finding — the opposite direction from
+the bias a results-driven change would take. Neither alters any estimate,
+interval, p-value, family membership, or eligibility decision: the
+verified Phase 3E numbers are identical before and after, and only the
+verdict *labels* changed. The Holm family remained 15 members with the
+same 8 survivors throughout.
+
+Exactly four rows changed label, all of them away from a NON-REPLICATION
+verdict the frozen text does not license:
+
+| Row | Erroneous label | Corrected label |
+| --- | --- | --- |
+| `cohort_c_model_specific_qwen` | NON-REPLICATION | DIRECTIONAL EFFECT, NOT MULTIPLICITY-SURVIVING |
+| `common_fixed_source_gemma` | NON-REPLICATION | DIRECTIONAL EFFECT, NOT MULTIPLICITY-SURVIVING |
+| `model_specific_cohort_restriction` | NON-REPLICATION | DIRECTIONAL EFFECT, NOT MULTIPLICITY-SURVIVING |
+| `common_fixed_source_qwen` | NON-REPLICATION | COUNTED ONCE (shared observations) |
+
+The primary test's classification was never affected by either correction:
+it is computed by `classify_replication`, which neither correction
+touched, and it was FULL CONFIRMATORY REPLICATION throughout.

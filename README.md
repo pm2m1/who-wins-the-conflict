@@ -46,103 +46,105 @@ Interpretation is restricted to genuine conflict trials — see
 
 ## Project status
 
-The controlled pilot has now been completed on **two instruction-tuned
-models**:
+**Phase 3 is complete and frozen.** A preregistered, four-model
+confirmatory study has been run end to end: design frozen before any data,
+cohorts built from an outcome-blind baseline screen, a sealed §36 pre-run
+manifest, 4 197 evidence-condition generations, and only the analyses
+declared in advance.
 
-- `Qwen/Qwen2.5-7B-Instruct`
-- `meta-llama/Llama-3.1-8B-Instruct`
+| Phase | What it was | Status |
+| --- | --- | --- |
+| 1 | literature synthesis | complete |
+| 2 | two-model **pilot** (Qwen, Llama), 30 items/model | complete, frozen |
+| 3 | four-model **confirmatory** study, preregistered | **complete, frozen** |
 
-Each model was screened independently on the same pinned PopQA candidate
-frame and then evaluated on a model-specific 60-item sample
-(30 knowledge-correct / KC and 30 knowledge-wrong / KW items), with each
-item run through all five C0-C4 conditions.
+Phase 2 and Phase 3 are different studies and are never pooled. Phase 2 is
+a pilot whose estimates are treated as very likely inflated; Phase 3 is the
+confirmatory test on fresh items.
 
-That gives:
+Models in Phase 3: `Qwen/Qwen2.5-7B-Instruct`,
+`meta-llama/Llama-3.1-8B-Instruct`, `mistralai/Mistral-7B-Instruct-v0.3`,
+`google/gemma-2-9b-it` — all at pinned immutable revisions, unquantized
+float16.
 
-- **300 generations per model**
-- **600 total pilot generations**
-- **120 genuine conflict trials per model**
-- **240 total primary conflict trials**
-- deterministic C0 baseline reproduction of **60/60** selected items for
-  each model
+### Headline result (Phase 3, confirmatory)
 
-The first Qwen pilot is frozen in
-[`docs/qwen_pilot_results.md`](docs/qwen_pilot_results.md).
+**Cohort A · Qwen · 96 fresh KW items · corrective conflict · frozen source
+pair**, holding evidence content exactly constant and changing only the
+attributed source:
 
-The completed two-model synthesis is frozen in
+| | |
+| --- | ---: |
+| adoption under `a government website` | **0.833** |
+| adoption under `an anonymous online forum post` | **0.583** |
+| paired cells (both / preferred-only / dispreferred-only / neither) | 56 / 24 / 0 / 16 |
+| discordant pairs | 24 |
+| **paired risk difference** | **+25.00 pp** |
+| **95% Tango matched-pair CI** | **[+17.41, +34.51] pp** |
+| **exact two-sided p** | **1.19 × 10⁻⁷** |
+
+**Classification: FULL CONFIRMATORY REPLICATION** of the Phase 2 pilot
+finding, on items the pilot never touched.
+
+A common-source effect also appeared for Llama (+10.9 pp) and Mistral
+(+17.5 pp) after Holm correction. Eight of the fifteen Holm-corrected
+secondary tests survive correction.
+
+### What the study does *not* claim
+
+- **No architecture effect.** The four models differ in family, size,
+  training data and instruction tuning simultaneously; this design cannot
+  attribute anything to architecture.
+- **No universal trust hierarchy.** Two of the four models produced no
+  usable source-preference calibration at all.
+- **Llama's corrective contrast is inconclusive, not a null.** Both arms
+  sit at 98% adoption with **zero discordant pairs**, so the frozen §30
+  rule flags it SATURATED / UNINFORMATIVE: the design could not detect a
+  source effect in that regime. This supersedes the Phase 2 pilot's
+  framing of the same pattern as a failure to replicate — the frozen
+  Phase 3 rules classify a ceiling as uninformative, never as evidence of
+  absence. The Phase 2 documents retain their original wording as
+  historical record.
+- **Mistral and Gemma have no model-specific arm at all.** Their frozen
+  calibration yielded no valid unique preferred/dispreferred pair, so under
+  the frozen §34 rule they run the common arm only and their
+  model-specific contrasts are NOT APPLICABLE — never measured, never
+  pooled with nulls.
+
+Full results: [`docs/phase3_final_report.md`](docs/phase3_final_report.md).
+Reproduction: [`docs/phase3_reproducibility.md`](docs/phase3_reproducibility.md).
+
+### Phase 2 pilot results (historical)
+
+The pilot ran 5 conditions over 60 items per model — 600 generations, 240
+primary conflict trials. Its Qwen corrective contrast was 25/30 vs 17/30,
+Δ = +26.7 pp, exact p = 0.0078. Frozen in
+[`docs/qwen_pilot_results.md`](docs/qwen_pilot_results.md) and
 [`docs/cross_model_pilot_results.md`](docs/cross_model_pilot_results.md).
 
-### Results at a glance
-
-The primary outcome is **committed context adoption**: whether the model
-explicitly commits to the answer asserted by conflicting evidence.
-
-| Conflict type | Qwen preferred | Qwen dispreferred | Qwen delta | Llama preferred | Llama dispreferred | Llama delta |
-|---|---:|---:|---:|---:|---:|---:|
-| Harmful override (KC) | 20.0% | 10.0% | +10.0 pp | 33.3% | 36.7% | -3.3 pp |
-| Corrective override (KW) | 83.3% | 56.7% | **+26.7 pp** | 96.7% | 100.0% | -3.3 pp |
-
-For Qwen corrective conflicts, the paired source comparison was
-17 both, 8 preferred-only, 0 dispreferred-only, and 5 neither
-(exact two-sided `p = 0.0078125`).
-
-The corresponding Llama corrective comparison was
-29 both, 0 preferred-only, 1 dispreferred-only, and 0 neither
-(exact two-sided `p = 1.0`).
-
-The strongest Qwen result therefore **did not replicate in Llama**.
-
-The current pilot evidence supports a **model-dependent boundary
-condition**, not the universal claim that preferred source attribution
-causes LLMs to follow conflicting evidence more often.
-
-A secondary mechanistic analysis also distinguishes **tentative answer
-content** from **committed adoption**. Both models can place the contextual
-candidate in the required `Answer:` field without necessarily committing
-to it, although this behavior is much more frequent in Qwen than in
-Llama. The Qwen decomposition was post-hoc; the Llama follow-up was
-pre-specified before the replication outcomes were observed.
-
-### Reproducibility
-
-Both research-model runs used:
-
-- the exact PopQA revision
-  `098765c79ea10a2cb19c828324e33281b8336ec0`;
-- deterministic generation;
-- exact pinned Hugging Face model revisions;
-- unquantized float16 execution;
-- an NVIDIA RTX 3090;
-- recorded prompt/model/dataset provenance;
-- independently SHA256-verified off-host final archives.
-
-Model revisions:
-
-- Qwen2.5-7B-Instruct:
-  `a09a35458c702b33eeacc393d103063234e8bc28`
-- Llama-3.1-8B-Instruct:
-  `0e9e39f249a16976918f6564b8830bc894c89659`
-
-The implementation includes the data pipeline, baseline screening,
-candidate scoring, source calibration, pilot construction, deterministic
-generation, evaluation, plotting, paired checks, sensitivity analyses,
-and exploratory regression infrastructure.
-
-The original experimental design and methodological decisions remain in
-`docs/`; model outputs and large runtime artifacts are intentionally not
-committed.
+Phase 3 uses that +26.7 pp only as a **compatibility diagnostic** — it can
+distinguish a full from an attenuated replication, and can never overturn
+a Phase 3 estimate or test.
 
 ## Repository layout
 
-    docs/            research documents (read these first)
-    configs/          YAML configuration (models, pilot, sources, prompts)
-    prompts/          versioned prompt templates
-    src/conflict_eval/ implementation package
-    scripts/          thin CLI entry-point wrappers
-    tests/            unit tests (no model downloads)
-    data/             raw/interim/processed PopQA (not committed; see data/README.md)
-    results/          pipeline-generated JSONL (not committed; see results/README.md)
-    figures/          pipeline-generated figures (not committed; see figures/README.md)
+    docs/                       research documents (read these first)
+      phase3_scaled_study_design.md   the FROZEN preregistration
+      phase3_final_report.md          Phase 3 confirmatory results
+      phase3_reproducibility.md       end-to-end runbook + artifact digests
+      decisions.md                    chronological methodology log
+    configs/
+      phase3/phase3_study.yaml        Phase 3 study config (sealed)
+      phase3/freeze/                  the sealed §36 pre-run freeze record
+      frozen/                         Phase 2 post-run provenance copies
+      models.yaml, pilot.yaml, sources.yaml, prompts.yaml
+    prompts/                    versioned prompt templates
+    src/conflict_eval/          implementation package
+      phase3/                   Phase 3 design, freeze, execution, analysis
+    scripts/                    thin CLI entry-point wrappers
+    tests/                      unit tests (no model downloads, no network)
+    data/    results/   figures/    runtime artifacts, not committed
+    runs/                       Phase 3 runtime output, not committed
 
 See `docs/decisions.md` for why `scripts/` are thin wrappers around
 `src/conflict_eval/cli.py` rather than a second implementation.
@@ -157,6 +159,28 @@ Torch is installed CPU-only by default via the plain PyPI index; install a
 CUDA build separately if running the 7B/8B models on GPU.
 
 ## Commands
+
+### Phase 3 (the confirmatory study)
+
+Reproduce the analysis from the verified Phase 3D return — no GPU, no
+network:
+
+    python -m conflict_eval.phase3 verify-evidence-return --root <phase3d-return>
+    python -m conflict_eval.phase3 gate --manifest configs/phase3/freeze/phase3c_pre_run_manifest.json
+    python -m conflict_eval.phase3 analyze-3e --root <phase3d-return>
+
+Regenerating the observations needs a 24 GB CUDA GPU:
+
+    python -m conflict_eval.phase3 build-run-plan
+    python -m conflict_eval.phase3 run-evidence --model qwen   # then llama, mistral, gemma
+
+`run-evidence` refuses to start unless the real-run gate opens and the
+config still hashes to what the sealed manifest recorded, and it verifies
+every planned prompt against its frozen digest before generating anything.
+Full runbook and artifact digests:
+[`docs/phase3_reproducibility.md`](docs/phase3_reproducibility.md).
+
+### Phase 2 (the frozen pilot pipeline)
 
     python -m conflict_eval prepare-data --config configs/pilot.yaml
     python -m conflict_eval screen --model llama --config configs/pilot.yaml
@@ -243,40 +267,45 @@ one will be added once an actual workflow run has succeeded.
 
 ## Limitations
 
-This remains a **pilot-scale two-model study**, not a publication-scale
-benchmark.
+Phase 3 is a preregistered four-model confirmatory study, but it is still
+narrow in scope.
 
 Important limitations include:
 
-- only two instruction-tuned models were tested;
-- each model contributes only 60 selected factual items and 120 primary
-  conflict trials;
-- KC/KW membership and parametric margins are model-specific, so the final
-  selected item sets differ between Qwen and Llama;
-- the selected relation distributions are not balanced;
-- source calibration was performed independently for each model, so the
-  dispreferred labels differ (`anonymous online forum post` for Qwen,
-  `social media post` for Llama);
-- source preference is based on direct elicitation rather than a validated
-  latent trust or credibility measure;
-- evidence is standardized and prompt-injected rather than retrieved from
-  naturally occurring documents;
-- Llama corrective adoption is near ceiling under both source conditions,
-  which limits sensitivity to source effects;
-- the Qwen tentative-answer decomposition was post-hoc, while the Llama
-  version was pre-specified as a secondary follow-up;
-- the exploratory Llama ordinary logistic regression did not converge due
-  to quasi-separation;
-- the pilot does not use an item-aware mixed-effects model;
+- only four instruction-tuned models, one dataset (PopQA at one pinned
+  revision), and four relations (`country`, `sport`, `place of birth`,
+  `mother`);
+- **two of the four models contribute no model-specific evidence at all** —
+  Mistral and Gemma are common-arm only, so that family rests on Qwen and
+  Llama;
+- **ceiling effects limit several cells**: Llama adopts corrective evidence
+  near-universally, leaving the source manipulation almost no room to act,
+  and five contrasts are INCONCLUSIVE by the frozen saturation or
+  discordance rules;
+- Cohort C is eligibility-limited (81 of 96) and three of eight Cohort B
+  model × group cells fall out of the confirmatory families under the
+  frozen §32 ladder;
+- KC/KW membership and parametric margins are model-specific, so selected
+  item sets differ between models;
+- source labels are **textual attributions, not real provenance**: evidence
+  is synthetic and template-rendered, with no retrieval and no real
+  documents;
+- source preference rests on direct elicitation, not a validated latent
+  trust or credibility measure;
+- a single decoding configuration and one prompt template version;
+  sensitivity to phrasing is untested;
+- no human baseline, and no measure of whether these source preferences are
+  normatively appropriate;
+- the Phase 2 comparator is a 30-item pilot estimate, used only as a
+  diagnostic, and is very likely inflated;
 - results should not be generalized to LLMs as a class.
 
-The main next step is a larger, pre-specified study with more model
-families, a shared cross-model item set, balanced relations, a common
-validated source hierarchy alongside model-specific calibration, and
-item-aware statistical modeling.
+The main next steps are broader model coverage with usable
+source calibration for every model, designs that avoid ceiling regimes for
+corrective conflict, real retrieved documents rather than templated
+evidence, and item-aware mixed-effects modeling.
 
-See
+See [`docs/phase3_final_report.md`](docs/phase3_final_report.md) for the
+complete Phase 3 result interpretation, and
 [`docs/cross_model_pilot_results.md`](docs/cross_model_pilot_results.md)
-for the complete result interpretation, hypothesis-by-hypothesis synthesis,
-provenance, sensitivity analyses, mechanistic findings, and follow-up
-design.
+for the frozen Phase 2 pilot synthesis.
