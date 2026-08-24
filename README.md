@@ -11,6 +11,10 @@ The specific thing I wanted to test is narrower and easier to falsify: if
 you keep the evidence text *identical* and change only who it is attributed
 to, does that change which answer the model gives?
 
+**Main result:** On 96 fresh Qwen items, changing only the attributed
+source increased adoption of the same corrective evidence from 58.3% to
+83.3% (+25.0 pp).
+
 ## Research question
 
 > Holding evidence content exactly constant, does changing only its
@@ -88,10 +92,10 @@ Full results, including the Cohort B/C breakdowns and every diagnostic:
 ## What surprised me
 
 **The pilot estimate held up.** Phase 2 gave +26.7 pp on 30 items
-(exact p = 0.0078). A pilot that small is likely to overstate an effect,
-so the design treats that number only as a comparator, never as a target.
-Phase 3 gave +25.0 pp on 96 fresh items, and the interval covers the pilot
-value.
+(exact p = 0.0078). Because the pilot was small, I treated its estimate as
+potentially inflated, so Phase 3 uses it only as a comparator rather than a
+target. Phase 3 gave +25.0 pp on 96 fresh items, and the interval covers
+the pilot value.
 
 **Llama left almost nothing to measure.** Llama was the clearest example
 of why I preregistered the saturation rule: both sources produced about
@@ -105,13 +109,13 @@ frozen parser rejected all 30 calibration outputs; for Mistral, the
 low-ranked sources were tied and its direct comparisons flipped with
 presentation order. I kept both models on the common-source arm rather
 than changing the calibration procedure after seeing those outputs, and
-their model-specific contrasts are recorded NOT APPLICABLE. Both outcomes
-are reported as findings about those models.
+their model-specific contrasts are recorded NOT APPLICABLE. Both are
+reported as calibration outcomes rather than being repaired post hoc.
 
-**Parametric strength predicts resistance.** Every model's coefficient on
-the continuous margin is negative — the more strongly a model holds its
-answer, the less it takes the evidence. That is associational, not causal;
-I measured the margin, I didn't manipulate it.
+**Parametric strength is associated with resistance.** Every model's
+coefficient on the continuous margin is negative — the more strongly a
+model holds its answer, the less it takes the evidence. That is
+associational, not causal; I measured the margin, I didn't manipulate it.
 
 ## Limitations
 
