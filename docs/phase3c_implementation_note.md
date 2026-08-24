@@ -1,8 +1,9 @@
 # Phase 3C — Implementation Note: common-arm-only fallback
 
-**Status: PHASE 3C configuration/implementation. No Phase 3 evidence
-outcome exists.** No baseline screening, no source-calibration run, and no
-evidence-condition generation was performed as part of this work. The
+**Status: PHASE 3C FROZEN. No Phase 3 evidence outcome exists.** The
+outcome-blind baseline screen required to construct the cohorts has since
+been run (see "Completing the freeze" below); no source-calibration run
+and no evidence-condition generation was performed at any point. The
 calibration outcomes recorded below were produced beforehand, on the
 RTX-3090 host, and are transcribed here — not recomputed, not adjusted.
 
@@ -291,21 +292,52 @@ the validator demand these artifacts when a real freeze manifest is
 eventually supplied. None of them was created here, cohort construction has
 not happened, and their absence is exactly why the gate stays closed.
 
-## Still outstanding before a real run
+## Completing the freeze
 
-The Phase 3C freeze is **not** complete. Model identity, arm state and
-calibration provenance are now settled, so those no longer block; what
-remains is cohort construction and the freeze manifest itself:
+Every item that was outstanding above has since been supplied from real
+verified artifacts, and the freeze is sealed. The outcome-blind baseline
+screen ran on the RTX-3090 host at commit
+`4b9ad5f28476fa4f8ed4d0687970fa6dac8fb7bd` for all four models — 8 blocks
+of 250 candidates each, unquantized float16, at the frozen ceiling — and
+its artifacts were verified on return (digests, identities, revisions,
+dtype, quantization, CUDA, dataset revision, block sequencing) before any
+cohort was derived from them. `configs/phase3/freeze/README.md` records
+what the sealed artifacts are and where the bulk empirical outputs live.
 
-- the outcome-blind baseline screen needed to build Cohorts A, B and C
-  (see the stage-order note above);
-- the real Phase 2 Qwen KW exclusion id list for Cohort A (§15.1);
-- final KC/KW pools, margins and margin-bin edges;
-- Cohort A/B/C membership and the cohort-membership map;
-- the deduplication map over realized selected items;
-- C0/baseline provenance and environment capture;
-- the sealed, hashed pre-run freeze manifest, after which
-  `ready_for_real_run` may be set for the first time.
+The screen stopped at the ceiling for every model rather than on the
+supply criterion, so several cohorts are eligibility-limited under the
+frozen rules. That is reported, not repaired:
 
-`real_run_gate.assert_ready_for_real_run` continues to refuse a real run
-until those are supplied, and `ready_for_real_run` remains `false`.
+- **Cohort A is COMPLETE** — 32/32/32 fresh Qwen KW items from a supply of
+  70/70/71, with the 30 §15.1 Phase 2 items excluded. The relation
+  dominance share is 0.406, below the 0.60 diagnostic threshold.
+- **Cohort B** realized the §32 ladder unevenly: five of the eight
+  model × group cells stay confirmatory-eligible, while `qwen|KC`,
+  `gemma|KC` and `gemma|KW` qualify on only two of four relations and
+  therefore leave the confirmatory families and are reported
+  descriptively (§32 rule 4).
+- **Cohort C is ELIGIBILITY_LIMITED** at 81 of the 96 target, because the
+  all-model intersection supplies only 9 `place of birth` items against a
+  relation quota of 24.
+
+No rule was loosened to improve any of these numbers. The frozen design
+anticipates exactly this outcome and specifies how to report it.
+
+### Why one §36 field is scoped rather than complete
+
+§36 asks for the "candidate file SHA256 and IDs". The digest is recorded
+from the run's own attestation
+(`runtime/candidate-frame.sha256`), but the candidate frame file itself
+was not returned from the GPU host, and rebuilding it locally would
+require downloading PopQA. `dataset.candidate_item_ids` therefore records
+the 2 000 screened candidates — verified to be one common frame prefix
+that all four models screened — and
+`screening.candidate_item_ids_scope` says so in the manifest rather than
+letting a prefix pass as the whole frame. The full frame is regenerable
+with `prepare-data` at the pinned dataset revision and checkable against
+the recorded digest.
+
+`ready_for_real_run` is now `true` for the first time, and
+`real_run_gate.assert_ready_for_real_run` passes — but only alongside the
+sealed manifest. Withholding the manifest closes the gate again even with
+the flag set, which is the property a test now pins.

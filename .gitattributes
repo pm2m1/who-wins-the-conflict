@@ -1,0 +1,17 @@
+# Line endings.
+#
+# Git is left to its usual text handling for source and prose, but every
+# artifact whose SHA256 is recorded as provenance is pinned to LF. Those
+# digests are the whole point of the Phase 3 freeze manifest (§36) and of
+# configs/frozen/: if a checkout on a different platform rewrote the bytes,
+# the recorded digest would no longer describe the file on disk, and a
+# replicator would see a spurious integrity failure.
+
+* text=auto
+
+# Frozen / hashed provenance artifacts — never rewrite these.
+configs/phase3/freeze/**   text eol=lf
+configs/phase3/*.yaml      text eol=lf
+configs/frozen/**          text eol=lf
+prompts/*.txt              text eol=lf
+*.jsonl                    text eol=lf

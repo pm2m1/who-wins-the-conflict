@@ -25,6 +25,8 @@ exists yet.
 from __future__ import annotations
 
 import copy
+import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -44,6 +46,7 @@ from conflict_eval.phase3.real_run_gate import (
 )
 
 COMMITTED_CONFIG = "configs/phase3/phase3_study.yaml"
+FREEZE_MANIFEST = Path("configs/phase3/freeze/phase3c_pre_run_manifest.json")
 SHA = "a" * 64
 ALL_MODELS = ("qwen", "llama", "mistral", "gemma")
 
@@ -365,13 +368,66 @@ def test_ready_flag_plus_incomplete_manifest_is_still_not_ready(tmp_path):
     assert check_readiness(cfg, manifest=data).ready is False
 
 
-# --- 20: the real committed config stays closed ----------------------------
+# --- 20: the real committed freeze is complete, and nothing weaker passes --
 
 
-def test_the_committed_config_remains_not_ready():
+def test_the_committed_freeze_manifest_satisfies_every_36_requirement():
+    """The sealed Phase 3C manifest is valid on the real committed config.
+
+    This is the end-to-end statement the whole module exists to support: not
+    that some hand-built fixture validates, but that the artifact actually
+    frozen for this study does.
+    """
     config = load_phase3_config(COMMITTED_CONFIG)
-    assert config.ready_for_real_run is False
+    manifest = json.loads(FREEZE_MANIFEST.read_text(encoding="utf-8"))
+    assert validate_manifest(
+        Phase3Manifest(data=manifest), expected_model_keys=sorted(config.models)
+    ) == []
+    assert check_readiness(config, manifest=manifest).ready is True
+    assert_ready_for_real_run(config, manifest)
+
+
+def test_the_committed_config_is_still_closed_without_that_manifest():
+    """`ready_for_real_run` is never self-certifying, before or after the
+    freeze: with the manifest withheld the gate closes again."""
+    config = load_phase3_config(COMMITTED_CONFIG)
     report = check_readiness(config, manifest=None)
     assert report.ready is False
     with pytest.raises(Phase3NotReadyError):
         assert_ready_for_real_run(config, manifest=None)
+
+
+def test_the_committed_freeze_manifest_carries_no_phase3_outcome():
+    """A pre-run manifest that recorded an outcome would not be pre-run.
+
+    Checked on the real sealed artifact, key by key at every depth, so a
+    Phase 3D result can never be back-filled into the freeze record without
+    failing here.
+    """
+    manifest = json.loads(FREEZE_MANIFEST.read_text(encoding="utf-8"))
+    forbidden = {
+        "context_adopted",
+        "final_correct",
+        "parsed_answer_accuracy",
+        "adoption_rate",
+        "source_effect",
+        "p_value",
+        "holm_adjusted_p",
+        "confidence_interval",
+        "raw_generation",
+    }
+    found: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            found.update(forbidden & set(node))
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(manifest)
+    assert found == set()
+    assert manifest["synthetic"] is False
+    assert manifest["frozen"] is True

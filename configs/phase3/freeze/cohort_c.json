@@ -1,0 +1,2444 @@
+{
+  "candidates_considered": 287,
+  "items": [
+    {
+      "item_id": "1404597",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 17.845709026361874
+        },
+        "llama": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.907209267159942
+        },
+        "mistral": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.435659505561944
+        },
+        "qwen": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.591094157572513
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "1567160",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Thorvaldsen Museum",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.6996000177460244
+        },
+        "llama": {
+          "baseline_answer": "Thorvaldsen Museum",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.0688293898492702
+        },
+        "mistral": {
+          "baseline_answer": "Denmark",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 22.77539054886438
+        },
+        "qwen": {
+          "baseline_answer": "Denmark",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 16.718750361447746
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "1580995",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "São Pedro do Sul",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 6.229155905527534
+        },
+        "llama": {
+          "baseline_answer": "Portugal",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.5625001192092896
+        },
+        "mistral": {
+          "baseline_answer": "Portugal",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 9.273437947034836
+        },
+        "qwen": {
+          "baseline_answer": "Portugal",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 9.718750247047865
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "19518",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Mali",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 14.68359417875763
+        },
+        "llama": {
+          "baseline_answer": "Mali",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 12.562500178813934
+        },
+        "mistral": {
+          "baseline_answer": "Mali is in Africa.",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 10.19983618218248
+        },
+        "qwen": {
+          "baseline_answer": "Mali is in Africa.",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 10.754024996887892
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2122202",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Ferrari",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.140625
+        },
+        "llama": {
+          "baseline_answer": "Italy",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.4262917190790176
+        },
+        "mistral": {
+          "baseline_answer": "Italy",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.871752889481286
+        },
+        "qwen": {
+          "baseline_answer": "Italy",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.133826258906629
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2331069",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Iloilo International Airport",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 5.678560799676234
+        },
+        "llama": {
+          "baseline_answer": "Iloilo International Airport",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.2258745543485476
+        },
+        "mistral": {
+          "baseline_answer": "Philippines",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 19.412109149619937
+        },
+        "qwen": {
+          "baseline_answer": "Philippines",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.694115609396249
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2331689",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Chicago Fire FC",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.326298401414533
+        },
+        "llama": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.464275784228448
+        },
+        "mistral": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 13.791039059310606
+        },
+        "qwen": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.890912278558545
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2535927",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.770506714288786
+        },
+        "llama": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 4.030873761600015
+        },
+        "mistral": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.364731699594813
+        },
+        "qwen": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 15.027499353455255
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2567382",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Perth",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 14.843749655061401
+        },
+        "llama": {
+          "baseline_answer": "Australia",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 15.281249679625034
+        },
+        "mistral": {
+          "baseline_answer": "Australia",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 18.554686793751898
+        },
+        "qwen": {
+          "baseline_answer": "Australia",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 16.56250030262163
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "2674978",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Old Persian",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.1383785769867245
+        },
+        "llama": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.696014208253473
+        },
+        "mistral": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.9375
+        },
+        "qwen": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.423827305436134
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3009780",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Old English",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 13.679180669802008
+        },
+        "llama": {
+          "baseline_answer": "Wales",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": -10.598565710351977
+        },
+        "mistral": {
+          "baseline_answer": "Old English is spoken in England.",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 16.78987486281923
+        },
+        "qwen": {
+          "baseline_answer": "Wales",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": -1.9609375
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3495575",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.69921886920929
+        },
+        "llama": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.529142361134291
+        },
+        "mistral": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.429687621181074
+        },
+        "qwen": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 22.640625596071004
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3730420",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Abkhaz",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 18.4648061869284
+        },
+        "llama": {
+          "baseline_answer": "Jordan",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": -0.40625
+        },
+        "mistral": {
+          "baseline_answer": "Abkhaz is in Georgia.",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 24.608936331148794
+        },
+        "qwen": {
+          "baseline_answer": "Jordan",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": -2.48046875
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3738056",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Chennai",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.4531249403953552
+        },
+        "llama": {
+          "baseline_answer": "India",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 2.199775092303753
+        },
+        "mistral": {
+          "baseline_answer": "India",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.186257708788617
+        },
+        "qwen": {
+          "baseline_answer": "India",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.360134462825954
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3753833",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Cleveland",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.4364424449013313
+        },
+        "llama": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.361607788883703
+        },
+        "mistral": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.629442302682037
+        },
+        "qwen": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 19.648737356068835
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3771579",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.935006195251844
+        },
+        "llama": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 6.025984749318923
+        },
+        "mistral": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 17.486362084851407
+        },
+        "qwen": {
+          "baseline_answer": "United States of America",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 17.39590324927184
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "3968607",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.546875059604645
+        },
+        "llama": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.3750605173408985
+        },
+        "mistral": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 19.015625003681635
+        },
+        "qwen": {
+          "baseline_answer": "Poland",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 24.273438096105565
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "4012395",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "United States",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 13.010641849061358
+        },
+        "llama": {
+          "baseline_answer": "United States",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 9.893344539912505
+        },
+        "mistral": {
+          "baseline_answer": "United States",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 21.735142361743783
+        },
+        "qwen": {
+          "baseline_answer": "United States",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 20.844451203302018
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "432839",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Volgodonsk",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.7243203679449834
+        },
+        "llama": {
+          "baseline_answer": "Russia",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.808594197034836
+        },
+        "mistral": {
+          "baseline_answer": "Russia",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.99218839406967
+        },
+        "qwen": {
+          "baseline_answer": "Russia",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 33.97265607875306
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "4452977",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Goldasht",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.662660219381602
+        },
+        "llama": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.405565872788429
+        },
+        "mistral": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.628906060010195
+        },
+        "qwen": {
+          "baseline_answer": "Iran",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.752784649157547
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "4521313",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Hyderabad House",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 6.981936582364142
+        },
+        "llama": {
+          "baseline_answer": "Hyderabad House is located in India.",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.3145786179562232
+        },
+        "mistral": {
+          "baseline_answer": "India",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 21.544921652413905
+        },
+        "qwen": {
+          "baseline_answer": "India",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 24.710938215819624
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "5774568",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "East New Britain Province",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.3092012251034173
+        },
+        "llama": {
+          "baseline_answer": "Papua New Guinea",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.102591318803509
+        },
+        "mistral": {
+          "baseline_answer": "Papua New Guinea",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.424693812375881
+        },
+        "qwen": {
+          "baseline_answer": "Papua New Guinea",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.730755471687
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "6261308",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Belavia",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 7.5398839646841225
+        },
+        "llama": {
+          "baseline_answer": "Belarus",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 22.14062449336052
+        },
+        "mistral": {
+          "baseline_answer": "Belarus",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 22.15227541155817
+        },
+        "qwen": {
+          "baseline_answer": "Belarus",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.992187913740054
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "6411342",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Stari Ras",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.884182198206266
+        },
+        "llama": {
+          "baseline_answer": "Serbia",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.343749687075615
+        },
+        "mistral": {
+          "baseline_answer": "Serbia",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.733750924470996
+        },
+        "qwen": {
+          "baseline_answer": "Serbia",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.792976826429367
+        }
+      },
+      "relation": "country"
+    },
+    {
+      "item_id": "1189879",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "badminton",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.032810628414154
+        },
+        "llama": {
+          "baseline_answer": "badminton",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.717784285545548
+        },
+        "mistral": {
+          "baseline_answer": "badminton",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.96472016970325
+        },
+        "qwen": {
+          "baseline_answer": "badminton",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 16.183342854201026
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "126299",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 13.909324435167946
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.460508785676211
+        },
+        "mistral": {
+          "baseline_answer": "Football (Soccer)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 5.403431483947041
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.721938610131474
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1316699",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 4.9539502108236775
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.130257449578494
+        },
+        "mistral": {
+          "baseline_answer": "Football (Soccer)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 6.452780730496092
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.999356329565671
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1327142",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.764651913807029
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 4.143460529458632
+        },
+        "mistral": {
+          "baseline_answer": "Football (Soccer)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.387199626255153
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.823163867053154
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1368451",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 13.601563453674316
+        },
+        "llama": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 1.5740123391151428
+        },
+        "mistral": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 1.5396185517311096
+        },
+        "qwen": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.181700587272644
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1381880",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Canoe Sprint",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.08722984790802
+        },
+        "llama": {
+          "baseline_answer": "Sprint canoeing",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.4902212684445355
+        },
+        "mistral": {
+          "baseline_answer": "Canoeing",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.929036545569337
+        },
+        "qwen": {
+          "baseline_answer": "Canoeing",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.8264883130716045
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1527071",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.056456399150193
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.79263327573426
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.603353342256298
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.546228907382101
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1528899",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.55423511393019
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.561054235557094
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.543926597700192
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.342933850423833
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1729733",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.265358805656433
+        },
+        "llama": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.697087287902832
+        },
+        "mistral": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.8998426403850317
+        },
+        "qwen": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.809102672385052
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1753408",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.320691236818675
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 17.517574077588506
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.171403585673033
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.931367874280417
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1892618",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.022319585084915
+        },
+        "llama": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.0033671855926514
+        },
+        "mistral": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 1.2906961392400262
+        },
+        "qwen": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.711720748338848
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "2004556",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.52135234058369
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.998985018581152
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.215595601330278
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.588860869518612
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "272387",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "ice hockey",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.457868653713376
+        },
+        "llama": {
+          "baseline_answer": "ice hockey",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 6.254964413907146
+        },
+        "mistral": {
+          "baseline_answer": "ice hockey",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.617237621736422
+        },
+        "qwen": {
+          "baseline_answer": "hockey",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.4389697909462029
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "2897641",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 13.205642313638236
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.9540470240172
+        },
+        "mistral": {
+          "baseline_answer": "Football (Soccer)",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 6.55239791872619
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.630832135743731
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "2943987",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "tennis",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.316341757774353
+        },
+        "llama": {
+          "baseline_answer": "tennis",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.160284996032715
+        },
+        "mistral": {
+          "baseline_answer": "tennis",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.786085605621338
+        },
+        "qwen": {
+          "baseline_answer": "tennis",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.307920011691749
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "3132805",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "American football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.53452816978097
+        },
+        "llama": {
+          "baseline_answer": "American football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.43862766213715
+        },
+        "mistral": {
+          "baseline_answer": "American football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 19.498978935182095
+        },
+        "qwen": {
+          "baseline_answer": "American football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.566251963929972
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "3174709",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.020302057266235
+        },
+        "llama": {
+          "baseline_answer": "Men's basketball",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 4.450600177010831
+        },
+        "mistral": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.187875860829081
+        },
+        "qwen": {
+          "baseline_answer": "basketball",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 12.871058389835525
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "3482443",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.436313472862821
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.33133576111868
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.593291462908383
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.168583870049588
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "3483612",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 30.917671525181504
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.585079792654142
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.996851143565436
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.796551504940908
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "3708093",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.757662971445825
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.911913870833814
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 14.033019783546479
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.179357610752049
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "4975222",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 0.7181983267655596
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.060591168701649
+        },
+        "mistral": {
+          "baseline_answer": "Football (Soccer)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.800763034800212
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.967327118214598
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "531441",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Snooker",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 21.986818630347443
+        },
+        "llama": {
+          "baseline_answer": "Snooker",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 9.656687242294083
+        },
+        "mistral": {
+          "baseline_answer": "Snooker",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 8.364180538202163
+        },
+        "qwen": {
+          "baseline_answer": "Snooker",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 10.201005073463193
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "6128890",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Cycling",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 5.344151966506615
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.366765124839731
+        },
+        "mistral": {
+          "baseline_answer": "Mike van der Hoorn plays soccer.",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 6.892613257671105
+        },
+        "qwen": {
+          "baseline_answer": "boxing",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 9.14125043151489
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "6490853",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.924461558111943
+        },
+        "llama": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.9531696238555
+        },
+        "mistral": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 15.21072644142987
+        },
+        "qwen": {
+          "baseline_answer": "association football",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.5320690275430024
+        }
+      },
+      "relation": "sport"
+    },
+    {
+      "item_id": "1030164",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Turin",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 17.153700962662697
+        },
+        "llama": {
+          "baseline_answer": "Turin",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.783517807855787
+        },
+        "mistral": {
+          "baseline_answer": "Turin",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.49712916576209
+        },
+        "qwen": {
+          "baseline_answer": "Turin",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 12.068979176014258
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "1201824",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "San Diego",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.488281299825758
+        },
+        "llama": {
+          "baseline_answer": "San Diego",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.436945083240668
+        },
+        "mistral": {
+          "baseline_answer": "Kansas City",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.676607698593216
+        },
+        "qwen": {
+          "baseline_answer": "Boston",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.252480778843164
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "1323570",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Taipei",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.8617347926289463
+        },
+        "llama": {
+          "baseline_answer": "Taipei",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.261991146951914
+        },
+        "mistral": {
+          "baseline_answer": "Taipei",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 3.061662832370075
+        },
+        "qwen": {
+          "baseline_answer": "Taipei",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.77401656730702
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "1648721",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Rio de Janeiro",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 23.039544206806266
+        },
+        "llama": {
+          "baseline_answer": "Rio de Janeiro",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.270748599512444
+        },
+        "mistral": {
+          "baseline_answer": "Rio de Janeiro",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.740351312965032
+        },
+        "qwen": {
+          "baseline_answer": "São Paulo",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.2541008126417334
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "2260300",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Philadelphia",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 2.0849427431821823
+        },
+        "llama": {
+          "baseline_answer": "Philadelphia",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.980765655636787
+        },
+        "mistral": {
+          "baseline_answer": "Philadelphia",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 12.759861464553978
+        },
+        "qwen": {
+          "baseline_answer": "Philadelphia",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 14.160156287252903
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "2842700",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Augusta",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 33.51562412083149
+        },
+        "llama": {
+          "baseline_answer": "Barnwell",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 10.774222204228863
+        },
+        "mistral": {
+          "baseline_answer": "Barnwell",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 18.02869543032284
+        },
+        "qwen": {
+          "baseline_answer": "Augusta",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 10.357254177331924
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "342569",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.187499114777893
+        },
+        "llama": {
+          "baseline_answer": "Chancelor Bennett",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.9684974376650644
+        },
+        "mistral": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 19.25195289606927
+        },
+        "qwen": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 16.613282188540325
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "516959",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Houston",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.640625208616257
+        },
+        "llama": {
+          "baseline_answer": "Houston",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.200567035373751
+        },
+        "mistral": {
+          "baseline_answer": "Houston",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 24.312500139625627
+        },
+        "qwen": {
+          "baseline_answer": "Atlanta",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.9687498211860657
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "5613652",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 21.871094677597284
+        },
+        "llama": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 6.593745045363903
+        },
+        "mistral": {
+          "baseline_answer": "Chicago",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.9547495568058366
+        },
+        "qwen": {
+          "baseline_answer": "San Francisco",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 8.678952124435455
+        }
+      },
+      "relation": "place of birth"
+    },
+    {
+      "item_id": "1633965",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Barbara Bush",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.629597629141063
+        },
+        "llama": {
+          "baseline_answer": "Barbara Bush",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.249633891546789
+        },
+        "mistral": {
+          "baseline_answer": "Barbara Bush",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.44879857312042
+        },
+        "qwen": {
+          "baseline_answer": "Barbara Bush",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.709030954477687
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "1726487",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Rebekah",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.687499947845936
+        },
+        "llama": {
+          "baseline_answer": "Rebekah",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 1.7817455022762563
+        },
+        "mistral": {
+          "baseline_answer": "Rebekah",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.837482987085423
+        },
+        "qwen": {
+          "baseline_answer": "Rebekah",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.8069456782277484
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "1782515",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Mary Ball Washington",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.299723481720624
+        },
+        "llama": {
+          "baseline_answer": "Mary Ball Washington",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.105282597709447
+        },
+        "mistral": {
+          "baseline_answer": "Mary Ball Washington",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.401923358983671
+        },
+        "qwen": {
+          "baseline_answer": "Mary Ball Washington",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.797836909691493
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2142170",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Decision: answer",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -7.5199790560855035
+        },
+        "llama": {
+          "baseline_answer": "Elizabeth Bowes-Lyon",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.6426953778063762
+        },
+        "mistral": {
+          "baseline_answer": "Elizabeth Bowes-Lyon",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.2380120398840972
+        },
+        "qwen": {
+          "baseline_answer": "Elizabeth Bowes-Lyon",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.2183727447074488
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2238655",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Betty Fox",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.024284317856655
+        },
+        "llama": {
+          "baseline_answer": "Diane Fox",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 1.5655629523098469
+        },
+        "mistral": {
+          "baseline_answer": "Ritta Fox",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.6528732379341212
+        },
+        "qwen": {
+          "baseline_answer": "Barbara McDougall",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.4188604779774323
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2281514",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Virgin Mary",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.657235384909049
+        },
+        "llama": {
+          "baseline_answer": "Virgin Mary",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 5.761130238834691
+        },
+        "mistral": {
+          "baseline_answer": "Virgin Mary",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 4.153778417609464
+        },
+        "qwen": {
+          "baseline_answer": "Virgin Mary",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.215188315152773
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "263653",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Decision: answer",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -7.405876393197104
+        },
+        "llama": {
+          "baseline_answer": "Jane Randolph Jefferson",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.9050417477265
+        },
+        "mistral": {
+          "baseline_answer": "Jane Randolph Jefferson",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.600312192177323
+        },
+        "qwen": {
+          "baseline_answer": "Jane Randolph",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 2.947709657251835
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2765337",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Khin Kyi",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.549485132151554
+        },
+        "llama": {
+          "baseline_answer": "Khin Kyi",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.929412149125781
+        },
+        "mistral": {
+          "baseline_answer": "Daw Khin Kyi",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.7680315746486257
+        },
+        "qwen": {
+          "baseline_answer": "Khin Kyi",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.302507973487991
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2797972",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Leto",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.061106561017889
+        },
+        "llama": {
+          "baseline_answer": "Leto",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.846189506358542
+        },
+        "mistral": {
+          "baseline_answer": "Leto",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 12.825521750748138
+        },
+        "qwen": {
+          "baseline_answer": "Leto",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 8.748352121281641
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "2925031",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Fatima bint Asad",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.22134918146621202
+        },
+        "llama": {
+          "baseline_answer": "Fatimah bint Asad",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.25105604916098
+        },
+        "mistral": {
+          "baseline_answer": "Fātima bint Asad",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.0653691227089439
+        },
+        "qwen": {
+          "baseline_answer": "Fatimah bint Khattab",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.32427063658120203
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "3026512",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Devaki",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.95085014301973
+        },
+        "llama": {
+          "baseline_answer": "Devaki",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.649021761899348
+        },
+        "mistral": {
+          "baseline_answer": "Devaki",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.17308330763938
+        },
+        "qwen": {
+          "baseline_answer": "Devaki",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.702023993978012
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "3641771",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Lori Grimes",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.672735484316945
+        },
+        "llama": {
+          "baseline_answer": "Lori Grimes",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 4.922619795689873
+        },
+        "mistral": {
+          "baseline_answer": "Lori Grimes",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 14.486986345033074
+        },
+        "qwen": {
+          "baseline_answer": "Lori Grimes",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.558111057180213
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "3782968",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Mary",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 4.685556396842003
+        },
+        "llama": {
+          "baseline_answer": "Maryam (also known as Mary)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.3696523229349014
+        },
+        "mistral": {
+          "baseline_answer": "Mary (Mariam)",
+          "knowledge_group": "KW",
+          "margin_stratum": "medium",
+          "parametric_margin": 3.6573992707756893
+        },
+        "qwen": {
+          "baseline_answer": "Mary",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.8871533817922077
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "3786129",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Letizia Bonaparte",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 25.45404261847337
+        },
+        "llama": {
+          "baseline_answer": "Letizia Bonaparte",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 11.819864064055402
+        },
+        "mistral": {
+          "baseline_answer": "Letizia Bonaparte",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.00020712472251
+        },
+        "qwen": {
+          "baseline_answer": "Letizia Bonaparte",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.057558707771629
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "4146112",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Sirikit",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 16.056228765592095
+        },
+        "llama": {
+          "baseline_answer": "Sirivannavari Nareetyavan",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.2905941243516281
+        },
+        "mistral": {
+          "baseline_answer": "Mom Rajasuda",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.23749218361141783
+        },
+        "qwen": {
+          "baseline_answer": "Suthida Tienprom",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -1.7609507280091443
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "5631335",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Mia Farrow",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 17.882593353909517
+        },
+        "llama": {
+          "baseline_answer": "Sondra Ray",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.3277229257267512
+        },
+        "mistral": {
+          "baseline_answer": "Woody Allen (in public claims)",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.6523423055590456
+        },
+        "qwen": {
+          "baseline_answer": "Christine Russell",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.35407695450946153
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "5853443",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Letizia Ramolino",
+          "knowledge_group": "KW",
+          "margin_stratum": "high",
+          "parametric_margin": 5.902716513571552
+        },
+        "llama": {
+          "baseline_answer": "Letizia Ramolino",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.06925111627622
+        },
+        "mistral": {
+          "baseline_answer": "Hortense de Beauharnais",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.888239341045442
+        },
+        "qwen": {
+          "baseline_answer": "Josephine Bonaparte",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.590008604449869
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "596053",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Ceres",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 18.95356784760952
+        },
+        "llama": {
+          "baseline_answer": "Ceres",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 3.960538215690273
+        },
+        "mistral": {
+          "baseline_answer": "Ceres",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.11964109182045
+        },
+        "qwen": {
+          "baseline_answer": "Ceres",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 7.425782315549441
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6165746",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Decision: answer",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -6.793602200899538
+        },
+        "llama": {
+          "baseline_answer": "Elena Glinskaya",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.495572632113786
+        },
+        "mistral": {
+          "baseline_answer": "Anastasia Romanovna Zakharina",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.2753411412380502
+        },
+        "qwen": {
+          "baseline_answer": "Maria Glinsky",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.3286422396534665
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6284015",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Jane Seymour",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.820275832164043
+        },
+        "llama": {
+          "baseline_answer": "Elizabeth of York",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.3946091771358624
+        },
+        "mistral": {
+          "baseline_answer": "Jane Seymour",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 5.6419828479946545
+        },
+        "qwen": {
+          "baseline_answer": "Jane Seymour",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.363065846799874
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6400081",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Nancy Hanks Lincoln",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 20.12916358311971
+        },
+        "llama": {
+          "baseline_answer": "Nancy Hanks Lincoln",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 8.645249363005556
+        },
+        "mistral": {
+          "baseline_answer": "Nancy Hanks Lincoln",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.90206239305553
+        },
+        "qwen": {
+          "baseline_answer": "Sarah Bush Lincoln",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.12431381857216667
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6464294",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Trisala",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.04766505933366716
+        },
+        "llama": {
+          "baseline_answer": "Devananda",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.42767905785391724
+        },
+        "mistral": {
+          "baseline_answer": "Trisala",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 0.8281237327804168
+        },
+        "qwen": {
+          "baseline_answer": "Trishala",
+          "knowledge_group": "KC",
+          "margin_stratum": "low",
+          "parametric_margin": 6.088028430202967
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6467777",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Maya Devi",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": -0.17096390575170517
+        },
+        "llama": {
+          "baseline_answer": "Maya",
+          "knowledge_group": "KC",
+          "margin_stratum": "high",
+          "parametric_margin": 12.398135681947073
+        },
+        "mistral": {
+          "baseline_answer": "Maya",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 9.123385181010235
+        },
+        "qwen": {
+          "baseline_answer": "Maya",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 17.076243340969086
+        }
+      },
+      "relation": "mother"
+    },
+    {
+      "item_id": "6493088",
+      "per_model": {
+        "gemma": {
+          "baseline_answer": "Teji Bachchan",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 10.82364981120918
+        },
+        "llama": {
+          "baseline_answer": "Teji Bachchan",
+          "knowledge_group": "KC",
+          "margin_stratum": "medium",
+          "parametric_margin": 7.632483065880512
+        },
+        "mistral": {
+          "baseline_answer": "Harivansh Rai Bachchan",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 1.8047854651264288
+        },
+        "qwen": {
+          "baseline_answer": "Jhumpa Sen",
+          "knowledge_group": "KW",
+          "margin_stratum": "low",
+          "parametric_margin": 2.078999524519895
+        }
+      },
+      "relation": "mother"
+    }
+  ],
+  "label_agreement_count": 42,
+  "label_disagreement_count": 39,
+  "relation_distribution": {
+    "country": 24,
+    "mother": 24,
+    "place of birth": 9,
+    "sport": 24
+  },
+  "status": "ELIGIBILITY_LIMITED"
+}

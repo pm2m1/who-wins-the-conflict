@@ -1,0 +1,162 @@
+{
+  "gemma|KC": {
+    "assigned_items": 238,
+    "edges": [
+      6.764651913807029,
+      12.453124940395355
+    ],
+    "knowledge_group": "KC",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "gemma",
+    "per_stratum_counts": {
+      "high": 79,
+      "low": 80,
+      "medium": 79
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "gemma|KW": {
+    "assigned_items": 204,
+    "edges": [
+      2.3750605271707173,
+      4.89383176038973
+    ],
+    "knowledge_group": "KW",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "gemma",
+    "per_stratum_counts": {
+      "high": 68,
+      "low": 69,
+      "medium": 67
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "llama|KC": {
+    "assigned_items": 586,
+    "edges": [
+      5.6564777959138155,
+      12.2109375
+    ],
+    "knowledge_group": "KC",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "llama",
+    "per_stratum_counts": {
+      "high": 195,
+      "low": 196,
+      "medium": 195
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "llama|KW": {
+    "assigned_items": 497,
+    "edges": [
+      1.4902212684445355,
+      3.668606901541523
+    ],
+    "knowledge_group": "KW",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "llama",
+    "per_stratum_counts": {
+      "high": 165,
+      "low": 166,
+      "medium": 166
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "mistral|KC": {
+    "assigned_items": 377,
+    "edges": [
+      7.008519469294697,
+      14.152286232958431
+    ],
+    "knowledge_group": "KC",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "mistral",
+    "per_stratum_counts": {
+      "high": 125,
+      "low": 126,
+      "medium": 126
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "mistral|KW": {
+    "assigned_items": 310,
+    "edges": [
+      3.22706522662952,
+      6.469078116471331
+    ],
+    "knowledge_group": "KW",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "mistral",
+    "per_stratum_counts": {
+      "high": 103,
+      "low": 104,
+      "medium": 103
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "qwen|KC": {
+    "assigned_items": 475,
+    "edges": [
+      9.2694068505225,
+      17.47656272148015
+    ],
+    "knowledge_group": "KC",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "qwen",
+    "per_stratum_counts": {
+      "high": 158,
+      "low": 159,
+      "medium": 158
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "qwen|KW": {
+    "assigned_items": 239,
+    "edges": [
+      2.852770462566241,
+      7.537734354807374
+    ],
+    "knowledge_group": "KW",
+    "method": "empirical tertiles of parametric_margin over the complete screened eligible pool within model x knowledge group (§11 step 1, §14); frozen before any trial was specified",
+    "model_key": "qwen",
+    "per_stratum_counts": {
+      "high": 79,
+      "low": 80,
+      "medium": 80
+    },
+    "strata": [
+      "low",
+      "medium",
+      "high"
+    ]
+  }
+}

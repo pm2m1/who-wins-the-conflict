@@ -8,6 +8,8 @@ source pairs; unresolved new families), §36 (freeze manifest) and §41
 from __future__ import annotations
 
 import dataclasses
+import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -43,6 +45,7 @@ from conflict_eval.phase3.real_run_gate import (
 )
 
 COMMITTED_CONFIG = "configs/phase3/phase3_study.yaml"
+FREEZE_MANIFEST = Path("configs/phase3/freeze/phase3c_pre_run_manifest.json")
 
 
 def _write_config(tmp_path, mutate=None):
@@ -108,8 +111,26 @@ def test_committed_config_disables_new_model_arms_under_the_frozen_rule():
     assert config.model("mistral").calibration_provenance["parser_valid_trials"] == 30
 
 
-def test_committed_config_is_not_marked_ready_for_a_real_run():
-    assert load_phase3_config(COMMITTED_CONFIG).ready_for_real_run is False
+def test_committed_config_is_ready_only_alongside_the_sealed_freeze_manifest():
+    """Phase 3C is frozen, so `ready_for_real_run` is now legitimately true.
+
+    The safety property this test guards did NOT go away when the freeze
+    happened -- it got stricter. The flag is not self-certifying, so what
+    must hold is that it is true *only* because a sealed, fully-valid §36
+    manifest exists beside it. Both halves are asserted here: the manifest
+    opens the gate, and removing it closes the gate again even though the
+    flag stays true.
+    """
+    config = load_phase3_config(COMMITTED_CONFIG)
+    assert config.ready_for_real_run is True
+
+    manifest = json.loads(FREEZE_MANIFEST.read_text(encoding="utf-8"))
+    assert manifest["frozen"] is True
+    assert manifest["synthetic"] is False
+    assert check_readiness(config, manifest=manifest).ready is True
+
+    # The flag alone buys nothing.
+    assert check_readiness(config, manifest=None).ready is False
 
 
 # --- config rejects design changes ---------------------------------------
@@ -257,23 +278,28 @@ def test_gate_blocks_the_committed_phase3b_config():
         assert_ready_for_real_run(config, manifest=None)
 
 
-def test_gate_reports_every_blocker_not_just_the_first():
+def test_gate_reports_every_blocker_not_just_the_first(tmp_path):
     """The gate must accumulate blockers, not short-circuit on the first.
 
-    Asserted against the blockers that legitimately survive at the current
-    pre-freeze state. Blockers that Phase 3C has genuinely resolved (exact
-    model ids/revisions, arm state) are deliberately NOT asserted -- a test
-    that demanded them would be pinning a stale state rather than the
-    accumulate-don't-short-circuit property.
+    Exercised against a config with several independent faults at once, so
+    the property is pinned by construction rather than by whatever the
+    committed config happens to be missing at a given phase.
     """
-    config = load_phase3_config(COMMITTED_CONFIG)
+    def mutate(d):
+        d["ready_for_real_run"] = False
+        d["dataset"]["revision"] = None
+        d["models"]["gemma"]["calibration_provenance"].pop("calibration_output_sha256")
+
+    config = load_phase3_config(_write_config(tmp_path, mutate))
     report = check_readiness(config, manifest=None)
     assert report.ready is False
     joined = " ".join(report.blockers)
     assert "ready_for_real_run" in joined
     assert "freeze manifest" in joined
-    # At least the two surviving §36 blockers, reported together.
-    assert len(report.blockers) >= 2
+    assert "dataset.revision" in joined
+    assert "calibration provenance" in joined
+    # Every independent fault is reported together, not one at a time.
+    assert len(report.blockers) >= 4
 
 
 def test_gate_blocks_on_incomplete_new_model_calibration_provenance(tmp_path):

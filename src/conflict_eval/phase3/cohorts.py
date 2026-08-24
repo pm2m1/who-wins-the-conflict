@@ -420,7 +420,13 @@ def build_cohort_c(
                 "knowledge_group": record["knowledge_group"],
                 "parametric_margin": record.get("parametric_margin"),
                 "margin_stratum": finalized_by_model[model_key].stratum_of(item_id),
-                "baseline_answer": record.get("baseline_answer"),
+                # The real baseline schema records the model's own answer as
+                # `memory_answer` (gold for KC, the model's wrong answer for
+                # KW); `baseline_answer` is the name some synthetic fixtures
+                # use. Recorded for reporting only -- it takes no part in
+                # selection, which uses eligibility and margin alone (§16).
+                "baseline_answer": record.get("memory_answer")
+                or record.get("baseline_answer"),
             }
         relation = relations.pop() if len(relations) == 1 else None
         if relation not in PHASE3_RELATIONS:

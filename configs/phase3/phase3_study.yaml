@@ -1,7 +1,8 @@
 # Phase 3 scaled-study configuration.
 #
-# STATUS: PHASE 3C. Exact model identities resolved and calibration
-# outcomes recorded. NOT YET FROZEN FOR A REAL RUN.
+# STATUS: PHASE 3C FROZEN. Exact model identities resolved, calibration
+# outcomes recorded, outcome-blind baseline screening complete, and the
+# cohorts, margin strata and §36 pre-run manifest sealed.
 #
 # Implements the frozen protocol in docs/phase3_scaled_study_design.md
 # (commit d684f39). That document is historical, pre-result material and is
@@ -277,9 +278,43 @@ cohorts:
     per_stratum_target: 32
     total_target: 96
     relation_dominance_flag: 0.60
-    # Phase 3C supplies the real frozen Phase 2 Qwen KW item ids here.
-    # They are NOT present in this checkout and must never be invented.
-    phase2_excluded_ids: null
+    # The real frozen Phase 2 Qwen KW item ids, supplied at Phase 3C. Derived
+    # from the Phase 2 Qwen pilot trial artifact
+    # (sha256 d3e6831efa6a49a7f5f6d555507462185d055c0c1d01de9254f24b3b4e518d6a)
+    # by `python -m conflict_eval.phase3 extract-exclusions`, which requires
+    # exactly the 30 ids the frozen pilot selected and refuses any other
+    # count. They were never typed in or reconstructed from memory.
+    phase2_excluded_ids:
+      - '22566'
+      - '88774'
+      - '729239'
+      - '1302707'
+      - '1554687'
+      - '1786832'
+      - '1809868'
+      - '1866419'
+      - '1901524'
+      - '2081420'
+      - '2123773'
+      - '2238655'
+      - '2245902'
+      - '2465832'
+      - '2977722'
+      - '3024065'
+      - '3113390'
+      - '3651362'
+      - '3728869'
+      - '3868065'
+      - '3968129'
+      - '4431678'
+      - '4499718'
+      - '4582157'
+      - '4930657'
+      - '5178965'
+      - '5392098'
+      - '5631335'
+      - '5779493'
+      - '5802960'
 
   # Cohort B — SECONDARY CONFIRMATORY / generalization (§15.2, §32).
   b:
@@ -304,4 +339,9 @@ sources_config: configs/sources.yaml
 # Set to true ONLY at the Phase 3C pre-run freeze, and only alongside a
 # frozen, fully-resolved manifest. The gate re-derives readiness from actual
 # field values, so this flag is not self-certifying.
-ready_for_real_run: false
+#
+# PHASE 3C IS FROZEN. The outcome-blind baseline screen is complete for all
+# four models, the margin strata and Cohorts A/B/C are frozen, and the §36
+# pre-run manifest at configs/phase3/freeze/phase3c_pre_run_manifest.json is
+# sealed. Phase 3D evidence-condition generation is authorized from here.
+ready_for_real_run: true

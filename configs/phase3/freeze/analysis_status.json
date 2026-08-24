@@ -1,0 +1,435 @@
+{
+  "entries": [
+    {
+      "cohort": "A",
+      "contrast": "M1 vs M2 (frozen Phase 2 Qwen pair), KW",
+      "multiplicity_family": "primary",
+      "name": "cohort_a_qwen_corrective_frozen_pair",
+      "outcome": "context_adopted",
+      "status": "PRIMARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Qwen M1 vs M2, KW (generalization, not a direct replication)",
+      "multiplicity_family": "secondary",
+      "name": "cohort_b_qwen_corrective",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Llama M1 vs M2, KW (generalization, not a direct replication)",
+      "multiplicity_family": "secondary",
+      "name": "cohort_b_llama_corrective",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Mistral M1 vs M2, KW (generalization, not a direct replication)",
+      "multiplicity_family": "none",
+      "name": "cohort_b_mistral_corrective",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Gemma M1 vs M2, KW (generalization, not a direct replication)",
+      "multiplicity_family": "none",
+      "name": "cohort_b_gemma_corrective",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Qwen M1 vs M2, KC (H4)",
+      "multiplicity_family": "secondary",
+      "name": "cohort_b_qwen_harmful",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Llama M1 vs M2, KC (H4)",
+      "multiplicity_family": "secondary",
+      "name": "cohort_b_llama_harmful",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Mistral M1 vs M2, KC (H4)",
+      "multiplicity_family": "none",
+      "name": "cohort_b_mistral_harmful",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Gemma M1 vs M2, KC (H4)",
+      "multiplicity_family": "none",
+      "name": "cohort_b_gemma_harmful",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Qwen common identity A vs B, conflict cells",
+      "multiplicity_family": "secondary",
+      "name": "common_fixed_source_qwen",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Llama common identity A vs B, conflict cells",
+      "multiplicity_family": "secondary",
+      "name": "common_fixed_source_llama",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Mistral common identity A vs B, conflict cells",
+      "multiplicity_family": "secondary",
+      "name": "common_fixed_source_mistral",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Gemma common identity A vs B, conflict cells",
+      "multiplicity_family": "secondary",
+      "name": "common_fixed_source_gemma",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Qwen continuous margin",
+      "multiplicity_family": "secondary",
+      "name": "parametric_strength_h1_qwen",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Llama continuous margin",
+      "multiplicity_family": "secondary",
+      "name": "parametric_strength_h1_llama",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Mistral continuous margin",
+      "multiplicity_family": "secondary",
+      "name": "parametric_strength_h1_mistral",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "Gemma continuous margin",
+      "multiplicity_family": "secondary",
+      "name": "parametric_strength_h1_gemma",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "C",
+      "contrast": "Qwen model-specific contrast on shared items",
+      "multiplicity_family": "secondary",
+      "name": "cohort_c_model_specific_qwen",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "C",
+      "contrast": "Llama model-specific contrast on shared items",
+      "multiplicity_family": "secondary",
+      "name": "cohort_c_model_specific_llama",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "C",
+      "contrast": "Mistral model-specific contrast on shared items",
+      "multiplicity_family": "none",
+      "name": "cohort_c_model_specific_mistral",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "C",
+      "contrast": "Gemma model-specific contrast on shared items",
+      "multiplicity_family": "none",
+      "name": "cohort_c_model_specific_gemma",
+      "outcome": "context_adopted",
+      "status": "NOT APPLICABLE"
+    },
+    {
+      "cohort": "C",
+      "contrast": "common contrast on shared items, across models",
+      "multiplicity_family": "secondary",
+      "name": "cohort_c_common_cross_model",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B+C",
+      "contrast": "model x source",
+      "multiplicity_family": "secondary",
+      "name": "cross_model_model_by_source_interaction",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "contrast, per relation dropped (§29.1)",
+      "multiplicity_family": "secondary",
+      "name": "leave_one_relation_out",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "contrast, country only (§29.2)",
+      "multiplicity_family": "secondary",
+      "name": "country_only_sensitivity",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "C",
+      "contrast": "contrast recomputed on shared items only (§29.3)",
+      "multiplicity_family": "secondary",
+      "name": "shared_cohort_restriction",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "complement of the shared-cohort restriction (§29.4)",
+      "multiplicity_family": "secondary",
+      "name": "model_specific_cohort_restriction",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "rank vs z-score margin standardization (§14, §29.5)",
+      "multiplicity_family": "secondary",
+      "name": "margin_standardization_robustness",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "bootstrap over items vs paired analytic interval (§29.7)",
+      "multiplicity_family": "secondary",
+      "name": "bootstrap_interval_robustness",
+      "outcome": "context_adopted",
+      "status": "SECONDARY CONFIRMATORY"
+    },
+    {
+      "cohort": "all",
+      "contrast": "by source and knowledge group",
+      "multiplicity_family": "none",
+      "name": "tentative_answer_content_vs_commitment",
+      "outcome": "tentative content",
+      "status": "SECONDARY (mechanistic)"
+    },
+    {
+      "cohort": "B",
+      "contrast": "margin x source, nonlinear/intermediate strength",
+      "multiplicity_family": "none",
+      "name": "source_by_parametric_strength_h3",
+      "outcome": "context_adopted",
+      "status": "EXPLORATORY"
+    },
+    {
+      "cohort": "C",
+      "contrast": "shared items where all models share the knowledge label",
+      "multiplicity_family": "none",
+      "name": "kc_kw_agreement_subset",
+      "outcome": "context_adopted",
+      "status": "EXPLORATORY"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per condition",
+      "multiplicity_family": "none",
+      "name": "self_reported_confidence",
+      "outcome": "confidence",
+      "status": "EXPLORATORY"
+    },
+    {
+      "cohort": "B",
+      "contrast": "common A vs B, agreement cells",
+      "multiplicity_family": "none",
+      "name": "common_arm_agreement_control",
+      "outcome": "context_adopted",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "n/a",
+      "contrast": "Phase 3 calibrated pair vs frozen Phase 2 pair; may never redefine the confirmatory contrast (§20.1)",
+      "multiplicity_family": "none",
+      "name": "calibration_stability_qwen_llama",
+      "outcome": "elicited pair",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "A",
+      "contrast": "most-frequent-relation share + dominance flag (§15.1)",
+      "multiplicity_family": "none",
+      "name": "cohort_a_relation_distribution",
+      "outcome": "composition",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per relation",
+      "multiplicity_family": "none",
+      "name": "relation_specific_descriptives",
+      "outcome": "context_adopted",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per stratum",
+      "multiplicity_family": "none",
+      "name": "margin_bin_displays",
+      "outcome": "context_adopted",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per model (gating, §34)",
+      "multiplicity_family": "none",
+      "name": "parsing_failure_rate_check",
+      "outcome": "malformed rate",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per condition",
+      "multiplicity_family": "none",
+      "name": "abstention_rates",
+      "outcome": "Decision == uncertain",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per condition",
+      "multiplicity_family": "none",
+      "name": "parsed_answer_accuracy",
+      "outcome": "final_correct",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "C0 vs baseline (gating, §34)",
+      "multiplicity_family": "none",
+      "name": "c0_reproducibility_check",
+      "outcome": "exact match",
+      "status": "DIAGNOSTIC"
+    },
+    {
+      "cohort": "all",
+      "contrast": "per contrast (§30)",
+      "multiplicity_family": "none",
+      "name": "ceiling_floor_diagnostics",
+      "outcome": "discordance/boundary/CI width",
+      "status": "DIAGNOSTIC"
+    }
+  ],
+  "realization": {
+    "cohort_b_confirmatory_eligible": {
+      "gemma|KC": false,
+      "gemma|KW": false,
+      "llama|KC": true,
+      "llama|KW": true,
+      "mistral|KC": true,
+      "mistral|KW": true,
+      "qwen|KC": false,
+      "qwen|KW": true
+    },
+    "cohort_b_outside_confirmatory_family": [
+      "gemma|KC",
+      "gemma|KW",
+      "qwen|KC"
+    ],
+    "declared_secondary_family": [
+      "cohort_b_qwen_corrective",
+      "cohort_b_llama_corrective",
+      "cohort_b_qwen_harmful",
+      "cohort_b_llama_harmful",
+      "common_fixed_source_llama",
+      "common_fixed_source_mistral",
+      "common_fixed_source_gemma",
+      "parametric_strength_h1_qwen",
+      "parametric_strength_h1_llama",
+      "parametric_strength_h1_mistral",
+      "parametric_strength_h1_gemma",
+      "cohort_c_model_specific_qwen",
+      "cohort_c_model_specific_llama",
+      "cohort_c_common_cross_model",
+      "cross_model_model_by_source_interaction",
+      "leave_one_relation_out",
+      "country_only_sensitivity",
+      "shared_cohort_restriction",
+      "model_specific_cohort_restriction",
+      "margin_standardization_robustness",
+      "bootstrap_interval_robustness"
+    ],
+    "model_specific_arm_disabled": [
+      "gemma",
+      "mistral"
+    ],
+    "not_applicable_analyses": [
+      {
+        "cohort": "B",
+        "model_key": "mistral",
+        "name": "cohort_b_mistral_corrective",
+        "reason": "mistral's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      },
+      {
+        "cohort": "B",
+        "model_key": "gemma",
+        "name": "cohort_b_gemma_corrective",
+        "reason": "gemma's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      },
+      {
+        "cohort": "B",
+        "model_key": "mistral",
+        "name": "cohort_b_mistral_harmful",
+        "reason": "mistral's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      },
+      {
+        "cohort": "B",
+        "model_key": "gemma",
+        "name": "cohort_b_gemma_harmful",
+        "reason": "gemma's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      },
+      {
+        "cohort": "C",
+        "model_key": "mistral",
+        "name": "cohort_c_model_specific_mistral",
+        "reason": "mistral's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      },
+      {
+        "cohort": "C",
+        "model_key": "gemma",
+        "name": "cohort_c_model_specific_gemma",
+        "reason": "gemma's model-specific arm was disabled by the frozen §34 calibration rule, so M1/M2 were never generated; this contrast was never measured and is NOT a null result"
+      }
+    ],
+    "primary_family": [
+      "cohort_a_qwen_corrective_frozen_pair"
+    ],
+    "realized_secondary_family": null,
+    "realized_secondary_family_note": "NOT YET DETERMINED. Realized Holm membership additionally depends on the §30 saturation diagnostic, which is a function of evidence-condition adoption rates. No Phase 3 evidence condition has been generated, so the realized family is resolved in Phase 3E and is deliberately not computed, asserted, or hard-coded here (§28, §30, §44)."
+  }
+}
