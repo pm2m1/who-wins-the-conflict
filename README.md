@@ -97,14 +97,27 @@ secondary tests survive correction.
   attribute anything to architecture.
 - **No universal trust hierarchy.** Two of the four models produced no
   usable source-preference calibration at all.
-- **Llama's corrective contrast is inconclusive, not a null.** Both arms
-  sit at 98% adoption with **zero discordant pairs**, so the frozen §30
-  rule flags it SATURATED / UNINFORMATIVE: the design could not detect a
-  source effect in that regime. This supersedes the Phase 2 pilot's
-  framing of the same pattern as a failure to replicate — the frozen
-  Phase 3 rules classify a ceiling as uninformative, never as evidence of
-  absence. The Phase 2 documents retain their original wording as
-  historical record.
+- **Llama's Phase 3 corrective contrast is INCONCLUSIVE, not a null.**
+  The chronology matters here, and the two phases say different things.
+
+  *Phase 2 (pilot, 2026-08)* suggested **no replicated Llama source
+  effect**: its corrective cells were 96.7% / 100.0%, and the pilot
+  reported the Qwen finding as not replicating in Llama. Those documents
+  are frozen historical record and keep that wording.
+
+  *Phase 3 (confirmatory)* does not overturn that observation — it
+  **classifies it**. Under the preregistered §30 rule, written before any
+  Phase 3 data existed, a contrast is SATURATED / UNINFORMATIVE when
+  either arm passes 0.95 (or falls below 0.05) adoption **and** there are
+  fewer than five discordant pairs. Llama's Phase 3 corrective contrast is
+  53/54 adopting under **both** sources — 0.981 each — with **zero**
+  discordant pairs, so both conditions hold and the frozen classification
+  is **INCONCLUSIVE due to saturation**.
+
+  The distinction is not cosmetic: the design had almost no room for a
+  source manipulation to act, so this is an inability to observe an
+  effect, not evidence that none exists. It may not be counted as evidence
+  against a source effect, and may not be pooled with non-saturated nulls.
 - **Mistral and Gemma have no model-specific arm at all.** Their frozen
   calibration yielded no valid unique preferred/dispreferred pair, so under
   the frozen §34 rule they run the common arm only and their
@@ -309,3 +322,39 @@ See [`docs/phase3_final_report.md`](docs/phase3_final_report.md) for the
 complete Phase 3 result interpretation, and
 [`docs/cross_model_pilot_results.md`](docs/cross_model_pilot_results.md)
 for the frozen Phase 2 pilot synthesis.
+
+## License and third-party materials
+
+This repository's **own** code and documentation are released under the
+**MIT License** — see [`LICENSE`](LICENSE).
+
+That covers what was written here: the `conflict_eval` package, the tests,
+the configuration and prompt templates, the research documents under
+`docs/`, and the frozen Phase 3 provenance records under
+`configs/phase3/freeze/`.
+
+**It does not cover anything external, and nothing here relicenses any
+third-party material.** In particular:
+
+- **Model weights.** No weights are contained in or distributed by this
+  repository. `Qwen/Qwen2.5-7B-Instruct`,
+  `meta-llama/Llama-3.1-8B-Instruct`, `mistralai/Mistral-7B-Instruct-v0.3`
+  and `google/gemma-2-9b-it` are each downloaded by the user from Hugging
+  Face and remain governed by their own model-card licenses and
+  acceptable-use terms. The Llama and Gemma repositories are **gated**: you
+  must accept their terms before the pipeline can load them.
+- **PopQA.** No dataset rows are committed. The dataset card for
+  `akariasai/PopQA` states no explicit license, which is precisely why the
+  raw and interim data are gitignored rather than redistributed here;
+  `data/README.md` documents exact recreation from the pinned revision
+  instead. Cite the original PopQA authors, not this repository, for the
+  data.
+- **Dependencies.** PyTorch, Transformers, Datasets, scikit-learn,
+  statsmodels, SciPy, pandas, NumPy, Matplotlib and the rest retain their
+  own licenses.
+- **Experimental outputs.** The generations analysed here are model
+  outputs, and their use may be constrained by the terms of the model that
+  produced them.
+
+Using this code to reproduce the study means obtaining those external
+resources yourself, under their terms.

@@ -1260,3 +1260,25 @@ verdict the frozen text does not license:
 The primary test's classification was never affected by either correction:
 it is computed by `classify_replication`, which neither correction
 touched, and it was FULL CONFIRMATORY REPLICATION throughout.
+
+## Repository license resolved: MIT (2026-08-25)
+
+The "Repository license — pending researcher decision" entry above is now
+resolved. A `LICENSE` file has been added carrying the **MIT License**,
+covering this repository's own code and documentation.
+
+MIT was chosen for a research repository intended to be read and rerun: it
+is short, permissive, well understood by reviewers, and imposes no
+condition beyond attribution. Nothing in the design or results depends on
+the choice.
+
+The scope is deliberately narrow, and the README's "License and
+third-party materials" section states it explicitly. The MIT grant covers
+only material authored here. It does **not** extend to model weights
+(none are contained in or distributed by this repository; all four models
+are fetched by the user from Hugging Face under their own terms, and the
+Llama and Gemma repositories are gated), to PopQA (whose dataset card
+states no explicit license — the reason the raw data is gitignored and
+recreated from a pinned revision rather than redistributed), or to any
+dependency. Adding a license to this repository relicenses nothing
+external, and the note says so rather than leaving a reader to infer it.
