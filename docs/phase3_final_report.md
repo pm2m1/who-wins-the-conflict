@@ -1,10 +1,9 @@
 # Phase 3 — Final Report
 
-**Status: FROZEN. Confirmatory results under the preregistered Phase 3C
-design.** Every number here was produced by the analysis the freeze
-declared, over observations generated from a study state sealed before any
-outcome existed. Nothing was added, dropped, or re-specified after results
-appeared.
+**Status: frozen.** Confirmatory results under the preregistration in
+`docs/phase3_scaled_study_design.md`. The cohorts, the analysis list and
+the statistical procedures were all fixed before any Phase 3 outcome
+existed.
 
 | | |
 | --- | --- |
@@ -74,6 +73,8 @@ conflict · frozen Phase 2 source pair (`a government website` preferred vs
 | **95% Tango matched-pair CI** | **[+17.41, +34.51] pp** |
 | **exact two-sided p** | **1.19 × 10⁻⁷** |
 
+![Primary result](assets/phase3/phase3_primary_result.png)
+
 ### Classification: **FULL CONFIRMATORY REPLICATION**
 
 Evaluated in the frozen order, which checks informativeness *first*:
@@ -96,9 +97,9 @@ p < 0.001 — the effect does not depend on any one relation. A percentile
 bootstrap over items gives +25.0 pp, [+16.7, +34.4].
 
 The dispreferred-only cell is **zero**: no item was adopted from the forum
-post but not from the government website. That is a boundary configuration
-where a Wald interval is degenerate, and is precisely why the Tango score
-interval was pre-specified.
+post but rejected from the government website. A Wald interval is
+degenerate on that configuration, which is why the Tango score interval
+was pre-specified.
 
 ---
 
@@ -128,6 +129,8 @@ is Holm-corrected within itself and is **never** pooled with the primary.
 | Mistral | 126 | +17.5 pp | 5.7e-06 | DIRECTIONAL EFFECT CONFIRMED |
 | Gemma | 96 | +11.5 pp | — | outside the family (Cohort B ineligible) |
 
+![Common-source effect by model](assets/phase3/phase3_common_source.png)
+
 ### Cross-model and margin
 
 | Analysis | Result | Holm p |
@@ -139,10 +142,13 @@ is Holm-corrected within itself and is **never** pooled with the primary.
 | H1 margin, Mistral | β = −0.228 (SE 0.040) | 1.6e-07 |
 | H1 margin, Gemma | β = −0.090 (SE 0.039) | outside the family |
 
-All four H1 coefficients are negative and all were estimable under the
-primary specification (ordinary logistic regression with item-clustered
-robust standard errors); the Firth fallback was not needed. Stronger
-parametric preference is associated with less context adoption.
+![H1 margin coefficients](assets/phase3/phase3_parametric_strength.png)
+
+All four coefficients are negative, and all were estimable under the
+primary specification (logistic regression with item-clustered robust
+standard errors), so the Firth fallback was not needed. Stronger
+parametric preference goes with less context adoption. The margin was
+measured rather than manipulated, so this is associational.
 
 The model × source interaction is **not** significant: this design did not
 detect a difference in the common-source effect across the four models.
@@ -165,10 +171,9 @@ evidence against a source effect, and may **not** be aggregated with
 non-saturated nulls as though equivalent.
 
 This is the Phase 2 Llama pattern reproduced at scale, and the reason the
-diagnostic was frozen in advance. Llama adopts corrective evidence almost
-always, from either source; the manipulation had essentially no room to
-express an effect. **Two arms both at ~98% and two arms both at ~50% are
-different observations and are reported differently.**
+diagnostic was written into the design in advance. Llama adopts corrective
+evidence almost always, from either source, so the manipulation had
+essentially no room to act.
 
 Four further contrasts fall below the discordance floor and are likewise
 INCONCLUSIVE: Cohort B Qwen harmful (floor regime, 0.125/0.042),
@@ -194,12 +199,12 @@ dispreferred pair:
   `1`/`2`, giving 15/15 malformed pairs. No parser relaxation, prompt
   change, or re-run was used, so no preference ordering exists at all.
 
-Under the frozen §34 rule both models therefore run the **common arm
-only**, contributing to the common-source hypothesis but not to the
-model-specific family. Their four model-specific contrasts are recorded
-**NOT APPLICABLE** — never measured — and are never pooled with, or
-reported as, null results. This is an informative measurement about those
-models, not a failure of the study.
+Under the frozen §34 rule both models run the **common arm only**. They
+contribute to the common-source hypothesis but not to the model-specific
+family, and their four model-specific contrasts are recorded **NOT
+APPLICABLE**: never measured, so never pooled with or reported as nulls.
+That two of four models produced no usable ranking is itself a finding
+about those models.
 
 ---
 
@@ -274,20 +279,19 @@ all 4 197 generations. Abstention ranged from 8.0% (Mistral) to 26.2%
 ## 10. Scientific conclusion
 
 **Source attribution can materially alter whether a language model adopts
-conflicting evidence.** For Qwen2.5-7B-Instruct under the frozen design,
-holding evidence content exactly constant and changing only the attributed
-source moved committed adoption from 58.3% to 83.3% — a +25.0 pp paired
-risk difference, 95% CI [+17.4, +34.5], exact p = 1.2 × 10⁻⁷. This
-robustly replicates the Phase 2 pilot finding on fresh items and survives
-every pre-specified sensitivity check.
+conflicting evidence.** For Qwen, holding evidence content constant and
+changing only the attributed source moved committed adoption from 58.3% to
+83.3% — +25.0 pp, 95% CI [+17.4, +34.5], exact p = 1.2 × 10⁻⁷. This
+replicates the Phase 2 pilot on fresh items and survives every
+pre-specified sensitivity check.
 
-**The effect is not universal across models, and it can be masked.** A
-common-source effect appeared for Llama and Mistral as well, and the
-cross-model interaction test did not detect a difference between models.
-But Llama's corrective contrast is uninterpretable here because both arms
-sit at the ceiling, and several other cells fall below the discordance
-floor. Where the design could not observe an effect, that is reported as
-an inability to observe — not as evidence of absence.
+**It is not shown to be universal, and it can be masked.** A
+common-source effect appeared for Llama and Mistral too, and the
+cross-model interaction test found no difference between models. But
+Llama's corrective contrast is uninterpretable because both arms sit at
+the ceiling, and several other cells fall below the discordance floor.
+Where the design could not observe an effect, the report says so rather
+than claiming absence.
 
 **What this study does not claim.** It does not claim an architecture
 effect: the four models differ in family, size, training data and
